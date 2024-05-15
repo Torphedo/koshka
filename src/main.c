@@ -1,27 +1,15 @@
 #include <stdlib.h>
 
-#include "a64_enc.h"
-#include "regalloc.h"
 #include "types.h"
 #include "logging.h"
 #include "emit.h"
 #include "file.h"
 #include "struct/vfile.h"
-#include "struct/queue.h"
 
 #include "os/nro.h"
 
 int main(int argc, char** argv) {
     if (argc < 2) {
-        queue q = queue_create(8);
-        queue_add(&q, 0xEE);
-        for (u32 i = 0; i < 5; i++) {
-            queue_add(&q, 0xDEADBEEF);
-        }
-        u64 val = queue_get(&q);
-        u64 val2 = queue_get(&q);
-        u64 val3 = queue_get(&q);
-
         u8* text_section_out = calloc(1, 0x400 * 0x10);
         module program = nro_load("illuminatiNX.nro");
         return 1;
