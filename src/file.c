@@ -9,6 +9,22 @@ bool file_exists(const char* path) {
     return (stat(path, &st) == 0);
 }
 
+bool path_is_file(const char* path) {
+    struct stat st = {0};
+    if (stat(path, &st) != 0) {
+        return false;
+    }
+    return S_ISREG(st.st_mode);
+}
+
+bool path_is_dir(const char* path) {
+    struct stat st = {0};
+    if (stat(path, &st) != 0) {
+        return false;
+    }
+    return S_ISDIR(st.st_mode);
+}
+
 u32 file_size(const char* path) {
     struct stat st = {0};
     if (stat(path, &st) != 0) {

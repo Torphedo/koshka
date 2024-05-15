@@ -6,6 +6,9 @@
 #include "types.h"
 
 bool file_exists(const char* path);
+bool path_is_file(const char* path);
+bool path_is_dir(const char* path);
+
 u32 file_size(const char* path);
 
 /// Read an entire file into a buffer. Caller must free the resource.
