@@ -31,16 +31,16 @@ int main(int argc, char** argv) {
         return 1;
     }
     char* path = argv[1];
-    u32 filesize = file_size(path);
+    u32 size = file_size(path) * 4;
     FILE* arm_code = fopen(path, "rb");
     if (arm_code == NULL) {
         LOG_MSG(error, "Failed to open %s for reading\n", path);
         return 1;
     }
     
-    vfile native_out = vfile_open(calloc(1, filesize), filesize);
+    vfile native_out = vfile_open(calloc(1, size), size);
     if (native_out.ptr == NULL) {
-        LOG_MSG(error, "Failed to make room for %d bytes of native code\n", filesize);
+        LOG_MSG(error, "Failed to make room for %d bytes of native code\n", size);
         return 1;
     }
 
