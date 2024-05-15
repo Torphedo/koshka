@@ -19,24 +19,26 @@ int main(int argc, char** argv) {
         return 1;
     }
     char* path = argv[1];
-    u32 size = file_size(path) * 4;
-    FILE* arm_code = fopen(path, "rb");
-    if (arm_code == NULL) {
-        LOG_MSG(error, "Failed to open %s for reading\n", path);
-        return 1;
-    }
-    
-    vfile native_out = vfile_open(calloc(1, size), size);
-    if (native_out.ptr == NULL) {
-        LOG_MSG(error, "Failed to make room for %d bytes of native code\n", size);
+    if (!path_is_file(path)) {
+        LOG_MSG(error, "Your input\"%s\" isn't a file\n", path);
         return 1;
     }
 
-    u32 instr = 0;
-    while (fread(&instr, 1, 4, arm_code) == 4) {
-        emit(&native_out, instr);
-    }
+    u32 in_size = file_size(path);
+    u32 out_size = in_size * 4;
     
+    vfile native_out = vfile_open(calloc(1, out_size), out_size);
+    u8* arm_code = file_load(path);
+    if (native_out.ptr == NULL || arm_code == NULL) {
+        LOG_MSG(error, "Failed to alloc for x86 or ARM code\n", out_size);
+        free(native_out.ptr);
+        free(arm_code);
+        return 1;
+    }
+
+    vfile in_stream = vfile_open(arm_code, in_size);
+    buf_translate(&in_stream, &native_out);
+
     return 0;
 }
 

@@ -1,13 +1,14 @@
 #include <stdbool.h>
 
-#include "emit.h"
+#include "types.h"
 #include "logging.h"
 
 #include "a64_enc.h"
 #include "regalloc.h"
 #include "struct/vfile.h"
+#include "struct/queue.h"
 
-void emit_branch(vfile* out, u32 instr) {
+void emit_branch(vfile* out, queue* branch_q, u32 instr) {
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
     return;
 }
@@ -61,10 +62,10 @@ void emit_load_store(vfile* out, u32 instr) {
     LOG_MSG(warning, "Unimplemented load/store 0x%08X\n", instr);
 }
 
-void emit(vfile* out, u32 instr) {
+void emit(vfile* out, queue* branch_q, u32 instr) {
     switch (instr_get_group(instr)) {
     case BRANCH:
-        emit_branch(out, instr);
+        emit_branch(out, branch_q, instr);
         break;
     case DATA_IMM:
         emit_data_imm(out, instr);
@@ -74,6 +75,9 @@ void emit(vfile* out, u32 instr) {
         break;
     case LD_STR:
         emit_load_store(out, instr);
+        break;
+    case DATA_SIMD:
+        LOG_MSG(warning, "Unimplemented SIMD instruction 0x%08X\n", instr);
         break;
     case UNALLOCATED:
         LOG_MSG(error, "Invalid instruction 0x%08X\n", instr);
@@ -98,6 +102,8 @@ void emit(vfile* out, u32 instr) {
 
 void buf_translate(vfile* src, vfile* dest) {
     bool no_errors = true;
+    // TODO: Could we make this a queue of u32 offsets?
+    queue branch_q = queue_create(0x40);
     while (!vfile_eof(src)) {
         u32 instr = VFILE_READ(u32, src);
         if (vfile_eof(dest)) {
@@ -105,8 +111,16 @@ void buf_translate(vfile* src, vfile* dest) {
             no_errors = false;
             break;
         }
-        emit(dest, instr);
+        emit(dest, &branch_q, instr);
     }
+
+    while (!queue_empty(&branch_q)) {
+        u64 instr_ptr = queue_get(&branch_q);
+        src->pos = (u32)instr_ptr;
+
+        buf_translate(src, dest);
+    }
+
     if (no_errors) {
         LOG_MSG(info, "Finished translating buffer with no vfile issues.\n");
     }
