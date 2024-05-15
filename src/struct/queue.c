@@ -17,6 +17,10 @@ bool queue_fullfront(queue* q) {
     return (q->front_idx == 0);
 }
 
+bool queue_empty(queue* q) {
+    return (q->front_idx == q->back_idx);
+}
+
 bool queue_contains(queue* q, u64 val) {
     for (u32 i = q->front_idx; i < q->back_idx + 1; i++) {
         if (q->data[i] == val) {
