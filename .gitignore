@@ -1,6 +1,25 @@
-*.txt
-manul/
+# IDEs
 .idea/
+.vscode/
+.vs/
+compile_commands.json
+
+# ISA Manuals & Notes
+manul/
+*.txt
+
+# Build output
+out/
 koshka
+
+# Test binaries
 *.nro
+*.nso
+
+# Archives for distribution/upload
+*.zip
+*.7z
+*.rar
+*.xz
+*.gz
 
