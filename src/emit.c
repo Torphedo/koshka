@@ -1,10 +1,12 @@
 // Page numbers in this file reference the same ISA manual as in a64_enc.h.
 
 #include <stdbool.h>
+#include <malloc.h>
 
 #include "common/types.h"
 #include "common/logging.h"
 #include "common/vfile.h"
+#include "common/file.h"
 #include "common/queue.h"
 
 #include "a64_enc.h"
@@ -205,5 +207,29 @@ void buf_translate(vfile* src, vfile* dest) {
     LOG_MSG(debug, "Unconditional branch (imm): %d\n", uncond_imm);
     LOG_MSG(debug, "Compare & branch: %d\n", compare_branch);
     LOG_MSG(debug, "Test & branch: %d\n", test_branch);
+}
+
+vfile translate_file(const char* path) {
+    if (!path_is_file(path)) {
+        LOG_MSG(error, "Your input\"%s\" isn't a file\n", path);
+        return vfile_open(NULL, 0);
+    }
+
+    u32 in_size = file_size(path);
+    u32 out_size = in_size * 4;
+    
+    vfile native_out = vfile_open(calloc(1, out_size), out_size);
+    u8* arm_code = file_load(path);
+    if (native_out.ptr == NULL || arm_code == NULL) {
+        LOG_MSG(error, "Failed to alloc for x86 or ARM code\n");
+        free(native_out.ptr);
+        free(arm_code);
+        return native_out;
+    }
+
+    vfile in_stream = vfile_open(arm_code, in_size);
+    buf_translate(&in_stream, &native_out);
+
+    return native_out;
 }
 
