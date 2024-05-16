@@ -1,7 +1,7 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include "../types.h"
+#include "types.h"
 
 typedef struct {
     // Base allocation & size

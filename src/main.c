@@ -1,12 +1,13 @@
 #include <stdlib.h>
 
-#include "types.h"
-#include "logging.h"
-#include "emit.h"
-#include "file.h"
-#include "struct/vfile.h"
+#include "common/vfile.h"
+#include "common/types.h"
+#include "common/logging.h"
+#include "common/file.h"
 
 #include "os/nro.h"
+
+#include "emit.h"
 
 int main(int argc, char** argv) {
     if (argc < 2) {

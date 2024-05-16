@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#include <logging.h>
+#include "logging.h"
 #include "queue.h"
 
 u32 queue_maxidx(queue* q) {

@@ -13,7 +13,7 @@
 
 #include <stdbool.h>
 
-#include "types.h"
+#include "common/types.h"
 
 // Encodings for broad categories of instructions
 // See C4.1 on pg. C4-192

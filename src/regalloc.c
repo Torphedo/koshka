@@ -1,7 +1,7 @@
 #include <string.h>
 #include <stdbool.h>
 
-#include "types.h"
+#include "common/types.h"
 #include "regalloc.h"
 
 #define X86_GP_COUNT (14)

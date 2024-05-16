@@ -7,7 +7,7 @@
     #include <Windows.h> 
 #endif
 
-#include <types.h>
+#include <common/types.h>
 #include "vmem.h"
 
 void* userspace = NULL;

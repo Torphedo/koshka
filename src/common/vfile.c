@@ -1,6 +1,5 @@
 #include "vfile.h"
-
-#include <logging.h>
+#include "logging.h"
 
 vfile vfile_open(void* ptr, u32 size) {
     return (vfile) { .ptr = (u8*)ptr, .pos = 0, .size = size};

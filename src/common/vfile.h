@@ -5,7 +5,7 @@
 /* stdio-style API for writing to memory */
 #include <stdbool.h>
 
-#include "../types.h"
+#include "types.h"
 
 typedef struct {
     u8* ptr;

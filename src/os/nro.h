@@ -1,7 +1,7 @@
 #ifndef NRO_H
 #define NRO_H
 
-#include <types.h>
+#include <common/types.h>
 #include "module.h"
 
 // Struct information sourced from https://switchbrew.org/wiki/NRO

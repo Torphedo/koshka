@@ -2,13 +2,13 @@
 
 #include <stdbool.h>
 
-#include "types.h"
-#include "logging.h"
+#include "common/types.h"
+#include "common/logging.h"
+#include "common/vfile.h"
+#include "common/queue.h"
 
 #include "a64_enc.h"
 #include "regalloc.h"
-#include "struct/vfile.h"
-#include "struct/queue.h"
 
 // Temporary tracker variables for debugging.
 u32 branch_cond = 0;
