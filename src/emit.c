@@ -1,3 +1,5 @@
+// Page numbers in this file reference the same ISA manual as in a64_enc.h.
+
 #include <stdbool.h>
 
 #include "types.h"
@@ -8,8 +10,79 @@
 #include "struct/vfile.h"
 #include "struct/queue.h"
 
-void emit_branch(vfile* out, queue* branch_q, u32 instr) {
+// Temporary tracker variables for debugging.
+u32 branch_cond = 0;
+u32 exception = 0;
+u32 system = 0;
+u32 uncond_reg = 0;
+u32 uncond_imm = 0;
+u32 compare_branch = 0;
+u32 test_branch = 0;
+
+void emit_branch(vfile* in, vfile* out, queue* branch_q, u32 instr) {
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
+    // See C4.3, pg. C4-197 for the table defining all these values & cases.
+    u8 op0 = instr >> 29;
+    u8 op1 = (instr >> 22) & 0xF;
+    
+    switch (op0) {
+    case 0b010:
+        if ((op1 & 0b1000) == 0) {
+            LOG_MSG(debug, "Conditional branch (imm)\n");
+            branch_cond++;
+            return;
+        }
+        break;
+    case 0b110:
+        if ((op1 & 0b1100) == 0) {
+            LOG_MSG(debug, "Application exception\n");
+            exception++;
+            return;
+        } else if (op1 == 0b0100) {
+            LOG_MSG(debug, "System branch\n");
+            system++;
+            return;
+        } else if (op1 & 0b1000) {
+            LOG_MSG(debug, "Unconditional branch (reg)\n");
+            uncond_reg++;
+            return;
+        }
+        break;
+    default:
+        break;
+    }
+    switch (op0 & 0b011) {
+    case 0b000:
+        LOG_MSG(debug, "Unconditional branch (imm)\n");
+        bool call = op0 & 0b100; // Top bit indicates if it's a subroutine call
+        // Least significant 26 bits * 4. See C6.6.20, pg. C6-463
+        // 32-bit max is 64x the 26-bit max, so multiplying by 4 is fine.
+        s32 dest = (instr & ~(0b111111 << 26)) * 4;
+        LOG_MSG(info, "b");
+        if (call) {
+            printf("l");
+        }
+        printf(" #%d\n", dest);
+        uncond_imm++;
+
+        // TODO: For jumps (when call variable is false), we can just jump
+        // ahead to the destination.
+        return;
+    case 0b001:
+        if ((op1 & 0b1000) == 0) {
+            LOG_MSG(debug, "Compare & branch (imm)\n");
+            compare_branch++;
+        } else {
+            LOG_MSG(debug, "Test & branch (imm)\n");
+            test_branch++;
+        }
+        return;
+    default:
+        break;
+    }
+
+    // This can only be reached if it reaches none of the valid cases.
+    LOG_MSG(error, "Invalid instruction 0x%08X\n", instr);
     return;
 }
 
@@ -62,10 +135,10 @@ void emit_load_store(vfile* out, u32 instr) {
     LOG_MSG(warning, "Unimplemented load/store 0x%08X\n", instr);
 }
 
-void emit(vfile* out, queue* branch_q, u32 instr) {
+void emit(vfile* in, vfile* out, queue* branch_q, u32 instr) {
     switch (instr_get_group(instr)) {
     case BRANCH:
-        emit_branch(out, branch_q, instr);
+        emit_branch(in, out, branch_q, instr);
         break;
     case DATA_IMM:
         emit_data_imm(out, instr);
@@ -111,7 +184,7 @@ void buf_translate(vfile* src, vfile* dest) {
             no_errors = false;
             break;
         }
-        emit(dest, &branch_q, instr);
+        emit(src, dest, &branch_q, instr);
     }
 
     while (!queue_empty(&branch_q)) {
@@ -124,5 +197,13 @@ void buf_translate(vfile* src, vfile* dest) {
     if (no_errors) {
         LOG_MSG(info, "Finished translating buffer with no vfile issues.\n");
     }
+
+    LOG_MSG(debug, "Conditional branch: %d\n", branch_cond);
+    LOG_MSG(debug, "Application exception: %d\n", exception);
+    LOG_MSG(debug, "System branch: %d\n", system);
+    LOG_MSG(debug, "Unconditional branch (reg): %d\n", uncond_reg);
+    LOG_MSG(debug, "Unconditional branch (imm): %d\n", uncond_imm);
+    LOG_MSG(debug, "Compare & branch: %d\n", compare_branch);
+    LOG_MSG(debug, "Test & branch: %d\n", test_branch);
 }
 

@@ -5,9 +5,8 @@
  * The Tegra X1 uses a Cortex A57 design, which implements ARMv8.0.
  * So, the ISA manual used here is issue A.k of the ARMv8-A manual:
  *
- * We use page numbers for this manual (both links lead to the same document):
+ * Page numbers referenced are for this manual:
  * https://developer.arm.com/documentation/ddi0487/ak/?lang=en
- * https://documentation-service.arm.com/static/5f8ee92bf86e16515cdbe531
  *
  * The *_get_group functions 
 */

@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     vfile native_out = vfile_open(calloc(1, out_size), out_size);
     u8* arm_code = file_load(path);
     if (native_out.ptr == NULL || arm_code == NULL) {
-        LOG_MSG(error, "Failed to alloc for x86 or ARM code\n", out_size);
+        LOG_MSG(error, "Failed to alloc for x86 or ARM code\n");
         free(native_out.ptr);
         free(arm_code);
         return 1;
