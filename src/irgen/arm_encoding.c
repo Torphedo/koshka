@@ -1,4 +1,4 @@
-#include "a64_enc.h"
+#include "arm_encoding.h"
 
 // See pg. C4-192.
 #define A64_OP0(instr) ((instr & (0b1111 << 25)) >> 25)

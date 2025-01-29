@@ -1,7 +1,7 @@
 #ifndef ARMV8_H
 #define ARMV8_H
 
-#include "types.h"
+#include <common/int.h>
 
 typedef struct {
     u64 sp;

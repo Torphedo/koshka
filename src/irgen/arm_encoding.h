@@ -13,7 +13,7 @@
 
 #include <stdbool.h>
 
-#include "common/types.h"
+#include <common/int.h>
 
 // Encodings for broad categories of instructions
 // See C4.1 on pg. C4-192
@@ -59,4 +59,3 @@ typedef enum {
 ld_str_cat ld_str_get_group(u32 instr);
 
 #endif // #ifndef A64_ENC_H
-
