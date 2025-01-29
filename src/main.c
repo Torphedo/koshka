@@ -1,13 +1,12 @@
-#include <stdlib.h>
-
-#include "common/vfile.h"
-#include "common/types.h"
-#include "common/logging.h"
-#include "common/file.h"
+#include <common/vfile.h>
+#include <common/path.h>
+#include <common/int.h>
+#include <common/logging.h>
+#include <common/file.h>
 
 #include "os/nro.h"
 
-#include "emit.h"
+#include "irgen/decode.h"
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -25,4 +24,3 @@ int main(int argc, char** argv) {
     vfile native_code = translate_file(path);
     return 0;
 }
-

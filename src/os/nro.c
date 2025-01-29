@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <common/types.h>
+#include <common/int.h>
 #include <common/file.h>
 #include <common/vfile.h>
 #include <common/logging.h>

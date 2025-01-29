@@ -2,7 +2,7 @@
 #define VMEM_H
 
 /* vmem.h: Helper functions for handling the emulated "userspace". */
-#include <common/types.h>
+#include <common/int.h>
 
 typedef enum {
     MEM_R,

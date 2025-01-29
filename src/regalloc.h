@@ -1,7 +1,7 @@
 #ifndef REGALLOC_H
 #define REGALLOC_H
 
-#include "common/types.h"
+#include <common/int.h>
 
 // All 14 available general-purpose x86 registers.
 // Ordering matches the (weird) x86 register encoding:

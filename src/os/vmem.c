@@ -1,13 +1,13 @@
 #include <stdlib.h>
 
-#include "platform.h"
-#ifdef POSIX
+#include <common/platform.h>
+#ifdef PLATFORM_POSIX
     #include <sys/mman.h>
 #elif defined(__WIN32)
     #include <Windows.h> 
 #endif
 
-#include <common/types.h>
+#include <common/int.h>
 #include "vmem.h"
 
 void* userspace = NULL;
@@ -29,7 +29,7 @@ void* vmem_alloc(u64 size, vmem_permission perm) {
     }
     else {
         void* ptr = NULL;
-        #ifdef POSIX
+        #ifdef PLATFORM_POSIX
             int rwx = PROT_READ | PROT_WRITE | PROT_EXEC;
             ptr = mmap(NULL, size, rwx, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         #elif defined(__WIN32)
@@ -44,7 +44,7 @@ void* vmem_alloc(u64 size, vmem_permission perm) {
 }
 
 void* vmem_map(u64 size, vmem_permission perm) {
-#ifdef POSIX
+#ifdef PLATFORM_POSIX
     int prot = 0;
     switch (perm) {
         case MEM_R:
@@ -91,7 +91,7 @@ void vmem_free(void* ptr) {
     if (buf->perm != MEM_RWX) {
         free(ptr);
     }
-    #ifdef POSIX
+    #ifdef PLATFORM_POSIX
         munmap(ptr, buf->size);
     #elif defined(__WIN32)
         VirtualFree(ptr, buf->size, MEM_DECOMMIT | MEM_RELEASE);
@@ -99,7 +99,7 @@ void vmem_free(void* ptr) {
 }
 
 void vmem_unmap(void* ptr, u64 size) {
-    #ifdef POSIX
+    #ifdef PLATFORM_POSIX
         munmap(ptr, size);
     #elif defined(__WIN32)
         VirtualFree(ptr, size, MEM_DECOMMIT | MEM_RELEASE);

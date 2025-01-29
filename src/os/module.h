@@ -1,7 +1,7 @@
 #ifndef MODULE_H
 #define MODULE_H
 
-#include <common/types.h>
+#include <common/int.h>
 
 typedef struct {
     u8* base;
