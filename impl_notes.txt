@@ -1,0 +1,57 @@
+Let's say there's a few distinct layers:
+IRGen:
+    Auto-generate decoder and instruction enum
+    ARM -> tree of instructions and their memory/register operands
+    Replace constant branches with references to the target instruction node
+
+Shatter:
+    Split IR into a tree of functions, which we can treat like small
+    independent programs.
+
+RegAlloc:
+    In each function, replace ARM register operations with x86 ones, or stack
+    operations when we run out. Store metadata with the function about which
+    registers map to what (like a sort of register transform). We can probably
+    use a lookup table.
+
+Codegen:
+    Emit x86 code for each operation of each function. For comptime constant
+    instructions, we can use labels before and after inline assembly, then copy
+    the region between them (won't work with variable registers or anything).
+    Across function calls the register allocation will change, so we need to
+    generate code to adjust for it.
+    In short:
+    - Emit code to shuffle registers around and match the callee's mapping
+    - Make function call
+    - Emit code to shuffle registers around and match our mapping
+
+    A simple mapping translation might look like:
+
+    func1_mapping:
+    r18 -> rax
+    r3 -> rcx
+    r8 -> rdx
+
+    func2_mapping:
+    r8 -> rax
+    r3 -> rcx
+
+    ===============
+    push rax to stack, because it's in use but needed by the new mapping
+    load rdx -> rax to get r8 where func2 expects it
+
+    do nothing to rcx, the mapping matches
+
+    our mappings now match, call func2.
+    mov rax -> rdx to get r8 where we expect it
+    pop rax from stack
+    our mapping is now back to normal, continue
+    ===============
+
+    This might mess up offsets for arguments passed on the stack... so we might
+    need to have some register storage at the base of the stack like Cemu.
+    When we hit a branch-to-register, use Cemu's strategy of emitting a call
+    back to the translator. It'll look up the address and translate it. Then it
+    overwrites the calling instruction (known via the return address) with a
+    branch to the translated code. The emitted callback should be the same size
+    every time (probably absolute call) so we know where to return to.
