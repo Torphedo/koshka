@@ -39,16 +39,20 @@ s8 reg_alloc(u8 arm_reg_id) {
     }
 
     // Special cases. We subtract 1 to account for the increment earlier
+    switch (arm_reg_id - 1) {
     // X29 is the frame pointer
-    if ((arm_reg_id - 1) == 29) {
+    case 29:
         taken_gp[RBP] = arm_reg_id;
-    }
+        break;
+    // X30 is the link register... should this be a direct mapping?
+
     // There is no X31, but SP is encoded in instructions as ID 31.
-    else if ((arm_reg_id - 1) == 31) {
+    case 31:
         taken_gp[RSP] = arm_reg_id;
+        break;
     }
 
-    // Oh well... resort to the stack, we're all out.
+    // Oh well... resort to the stack
     full = true;
     return -1;
 }
