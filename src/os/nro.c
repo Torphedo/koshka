@@ -47,9 +47,7 @@ module nro_load(const char* path) {
     vfile textsrc = vfile_open(textseg, textsize);
     // 50% larger than ARM buffer, in case code size is larger
     vfile textdest = vfile_open(vmem_alloc(textsize * 1.5, MEM_RWX), textsize * 1.5);
-    buf_translate(&textsrc, &textdest);
-    LOG_MSG(info, "Translated .text section\n");
-    
+
 
     // MOD0 seems to be optional?? Nothing about this format makes sense.
     bool has_mod0 = (mod.magic == MAGIC('M', 'O', 'D', '0'));
@@ -64,10 +62,6 @@ module nro_load(const char* path) {
     // on load, its size is unknown. We need known offsets to the data sections
     // while translating, which would otherwise be impossible.
 
-    // TODO: Pass .text section buffer to an emitter, so we translate .text on
-    // program load.
-
     fclose(nro);
     return output;
 }
-

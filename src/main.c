@@ -1,9 +1,13 @@
+#include <stdlib.h>
+
 #include <common/vfile.h>
 #include <common/path.h>
 #include <common/int.h>
 #include <common/logging.h>
 #include <common/file.h>
 
+#include "common/file.h"
+#include "common/vfile.h"
 #include "os/nro.h"
 
 #include "irgen/decode.h"
@@ -20,7 +24,19 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    const s64 size = file_size(path);
+    u8* arm_buf = file_load(path);
+    if (arm_buf == NULL) {
+        LOG_MSG(error, "Failed to load ARM assembly file \"%s\"\n", path);
+        return EXIT_FAILURE;
+    }
+
     // We assume the file just has ARM assembly
-    vfile native_code = translate_file(path);
-    return 0;
+    vfile arm_code = vfile_open(arm_buf, size);
+    while (vfile_opcheck(&arm_code, sizeof(u32))) {
+        const u32 arm_instr = VFILE_READ(u32, &arm_code);
+        const iml_instr iml = decode(arm_instr);
+    }
+
+    return EXIT_SUCCESS;
 }
