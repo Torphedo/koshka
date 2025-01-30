@@ -7,7 +7,6 @@ compile_commands.json
 
 # ISA Manuals & Notes
 manul/
-*.txt
 
 # Build output
 out/
