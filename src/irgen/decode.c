@@ -1,4 +1,4 @@
-// Page numbers in this file reference the same ISA manual as in a64_enc.h.
+// Page numbers in this file reference the same ISA manual as the rest of the code
 #include "decode.h"
 
 #include <stdbool.h>
@@ -103,7 +103,7 @@ iml_instr decode_movw(u32 instr) {
 iml_instr decode_data_imm(u32 instr) {
     LOG_MSG(debug, "Immediate instruction 0x%08X\n", instr);
     switch (data_imm_get_group(instr)) {
-    case mov_wide:
+    case MOV_WIDE:
         decode_movw(instr);
         break;
     default:

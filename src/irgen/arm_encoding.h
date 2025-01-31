@@ -3,9 +3,8 @@
 /* Helper functions & enums for decoding ARMv8 instructions.
  *
  * The Tegra X1 uses a Cortex A57 design, which implements ARMv8.0.
- * So, the ISA manual used here is issue A.k of the ARMv8-A manual:
+ * So, the ISA manual we reference is issue A.k of the ARMv8-A manual:
  *
- * Page numbers referenced are for this manual:
  * https://developer.arm.com/documentation/ddi0487/ak/?lang=en
  *
  * The *_get_group functions 
@@ -14,6 +13,8 @@
 #include <stdbool.h>
 
 #include <common/int.h>
+// Instructions are divided into a 3-level tree of "instruction pages", which
+// we use to quickly identify them.
 
 // Encodings for broad categories of instructions
 // See C4.1 on pg. C4-192
@@ -26,20 +27,20 @@ typedef enum {
     DATA_SIMD, // (0b1111 << 25) && (0b0111 << 25) are the same group
 }enc_cat;
 
-// Returns the instruction group the instruction fits into. UNALLOCATED means
-// the instruction is invalid.
+// Returns the top-level instruction page the instruction belongs into.
+// UNALLOCATED means the instruction is invalid.
 enc_cat instr_get_group(u32 instr);
 
 // Categories of data processing instructions with immediate values.
 // Use only with instructions categorized as DATA_IMM with instr_get_group().
 // See C4.2 on pg. C4-193
 typedef enum {
-    pc_rel_adr,  // Load PC-relative address into a register
-    addsub_imm,  // Add/subtract immediate value
-    logical_imm, // Bitwise operation between register & imm. data
-    mov_wide,    // MOV 16-bit value to register
-    bitfield,    // 
-    extract      //
+    PC_REL_ADR,  // Load PC-relative address into a register
+    ADDSUB_IMM,  // Add/subtract immediate value
+    LOGICAL_IMM, // Bitwise operation between register & imm. data
+    MOV_WIDE,    // MOV 16-bit value to register
+    BITFIELD,    // 
+    EXTRACT      //
 }data_imm_cat;
 data_imm_cat data_imm_get_group(u32 instr);
 
@@ -62,13 +63,14 @@ ld_str_cat ld_str_get_group(u32 instr);
 // Use only with instructions categorized as DATA_REG with instr_get_group().
 // See C4.5 on pg. C4-224
 typedef enum {
-    // Data processing from a different number of sources
+    // Data processing w/ different numbers of sources
     DATA_REG_3_SOURCES,
     DATA_REG_2_SOURCES,
     DATA_REG_1_SOURCE,
 
     DATA_REG_LOGICAL_SHIFT,
 
+    // Add/subtract
     DATA_REG_ADDSUB_SHIFT,
     DATA_REG_ADDSUB_EXTEND,
     DATA_REG_ADDSUB_CARRY,
