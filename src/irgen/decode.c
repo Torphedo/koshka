@@ -83,10 +83,10 @@ iml_instr decode_movw(u32 instr) {
             const u8 id = reg_alloc(instr & 0b1111);
             const u64 imm = (instr & (0xFFFF << 5)) >> 5;
             out.op1.type = IML_OPERAND_REGISTER;
-            out.op1.reg = id;
+            out.op1.reg.id = id;
 
             out.op2.type = IML_OPERAND_IMMEDIATE;
-            out.op2.reg = imm;
+            out.op2.imm = imm;
             break;
         case 0b11:
             LOG_MSG(debug, "MOVK\n");
@@ -101,7 +101,7 @@ iml_instr decode_movw(u32 instr) {
 }
 
 iml_instr decode_data_imm(u32 instr) {
-    LOG_MSG(debug, "Immediate data instruction 0x%08X\n", instr);
+    LOG_MSG(debug, "Immediate instruction 0x%08X\n", instr);
     switch (data_imm_get_group(instr)) {
     case mov_wide:
         decode_movw(instr);
@@ -115,11 +115,46 @@ iml_instr decode_data_imm(u32 instr) {
 
 iml_instr decode_data_reg(u32 instr) {
     LOG_MSG(debug, "Register data instruction 0x%08X\n", instr);
+    switch (data_reg_get_group(instr)) {
+    case DATA_REG_3_SOURCES:
+        LOG_MSG(debug, "Data operation on 3 sources\n");
+        break;
+    case DATA_REG_2_SOURCES:
+        LOG_MSG(debug, "Data operation on 2 sources\n");
+        break;
+    case DATA_REG_1_SOURCE:
+        LOG_MSG(debug, "Data operation on 1 source\n");
+        break;
+    case DATA_REG_LOGICAL_SHIFT:
+        LOG_MSG(debug, "Bitwise instruction w/ shifted register\n");
+        break;
+    case DATA_REG_ADDSUB_SHIFT:
+        LOG_MSG(debug, "Add/subtract w/ shifted register\n");
+        break;
+    case DATA_REG_ADDSUB_EXTEND:
+        LOG_MSG(debug, "Add/subtract w/ sign/zero-extended register\n");
+        break;
+    case DATA_REG_ADDSUB_CARRY:
+        LOG_MSG(debug, "Add/subtract w/ carry\n");
+        break;
+    case DATA_REG_COND_COMP_REG:
+        LOG_MSG(debug, "Conditional compare w/ register\n");
+        break;
+    case DATA_REG_COND_COMP_IMM:
+        LOG_MSG(debug, "Conditional compare w/ immediate\n");
+        break;
+    case DATA_REG_COND_SEL:
+        LOG_MSG(debug, "Conditional select\n");
+        break;
+    default:
+        LOG_MSG(debug, "Invalid instruction group.\n");
+        break;
+    }
     return (iml_instr){0};
 }
 
 iml_instr decode_load_store(u32 instr) {
-    LOG_MSG(warning, "Unimplemented load/store 0x%08X\n", instr);
+    LOG_MSG(warning, "Unimplemented instruction 0x%08X\n", instr);
     return (iml_instr){0};
 }
 

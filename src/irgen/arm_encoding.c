@@ -1,7 +1,8 @@
 #include "arm_encoding.h"
+#include "bitmanip.h"
 
 // See pg. C4-192.
-#define A64_OP0(instr) ((instr & (0b1111 << 25)) >> 25)
+#define A64_OP0(instr) (GET_BIT_REGION(instr, 25, 29))
 
 #define A64_GROUP_DATA_IMM(instr) ((A64_OP0(instr) & 0b1110) == 0b1000)
 #define A64_GROUP_BRANCH(instr) ((A64_OP0(instr) & 0b1110) == 0b1010)
@@ -40,3 +41,59 @@ data_imm_cat data_imm_get_group(u32 instr) {
     return 0;
 }
 
+data_reg_cat data_reg_get_group(u32 instr) {
+    const u8 op0 = GET_SINGLE_BIT(instr, 30);
+    const u8 op1 = GET_SINGLE_BIT(instr, 28);
+    const u8 op2 = GET_BIT_REGION(instr, 21, 24);
+    const u8 op3 = GET_SINGLE_BIT(instr, 11);
+
+    // Sorry for all the magic numbers, there's not much I can do to make it
+    // more intuitive. See C-4.5 on page C4-224 for the original table.
+    if (op1 == 0) {
+        if (GET_SINGLE_BIT(op2, 3) == 0) {
+            return DATA_REG_LOGICAL_SHIFT;
+        }
+
+        if ((op2 & 0b1001) == 0b1000) {
+            return DATA_REG_ADDSUB_SHIFT;
+        }
+
+        if ((op2 & 0b1001) == 0b1001) {
+            return DATA_REG_ADDSUB_EXTEND;
+        }
+    }
+
+    if (op1 == 1) {
+        if (op2 == 0b0000) {
+            return DATA_REG_ADDSUB_CARRY;
+        }
+
+        const bool conditional_compare = (op2 == 0b0010);
+        if (conditional_compare) {
+            if (op3) {
+                return DATA_REG_COND_COMP_IMM;
+            } else {
+                return DATA_REG_COND_COMP_REG;
+            }
+        }
+
+        if (op2 == 0b0100) {
+            return DATA_REG_COND_SEL;
+        }
+
+        if (op2 == 0b0110) {
+            if (op0 == 0) {
+                return DATA_REG_1_SOURCE;
+            } else {
+                return DATA_REG_2_SOURCES;
+            }
+        }
+
+        if ((op2 & 0b1000) == 0b1000) {
+            return DATA_REG_3_SOURCES;
+        }
+    }
+
+    // No pattern match, instruction is invalid.
+    return DATA_REG_UNALLOCATED;
+}

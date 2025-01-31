@@ -58,4 +58,31 @@ typedef enum {
 }ld_str_cat;
 ld_str_cat ld_str_get_group(u32 instr);
 
+// Categories of data processing on registers
+// Use only with instructions categorized as DATA_REG with instr_get_group().
+// See C4.5 on pg. C4-224
+typedef enum {
+    // Data processing from a different number of sources
+    DATA_REG_3_SOURCES,
+    DATA_REG_2_SOURCES,
+    DATA_REG_1_SOURCE,
+
+    DATA_REG_LOGICAL_SHIFT,
+
+    DATA_REG_ADDSUB_SHIFT,
+    DATA_REG_ADDSUB_EXTEND,
+    DATA_REG_ADDSUB_CARRY,
+
+    // Conditional compare with register or immediate
+    DATA_REG_COND_COMP_REG,
+    DATA_REG_COND_COMP_IMM,
+
+    // Conditional select
+    DATA_REG_COND_SEL,
+
+    // Invalid instruction
+    DATA_REG_UNALLOCATED,
+}data_reg_cat;
+data_reg_cat data_reg_get_group(u32 instr);
+
 #endif // #ifndef A64_ENC_H

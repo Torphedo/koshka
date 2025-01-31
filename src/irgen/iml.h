@@ -29,8 +29,13 @@ typedef enum {
 typedef struct {
     iml_operand_type type: 2;
     union {
-        // 5 bits is enough for any "normal" ARM or x86 register number
-        u8 reg: 5;
+        struct {
+            // 5 bits is enough for any "normal" ARM or x86 register number
+            u8 id: 5;
+            // Instructions can reference just the 32-bit portion of a 64-bit
+            // register, or the whole thing
+            bool is_32bit: 1;
+        }reg;
         u16 imm;
     };
 }iml_operand;
