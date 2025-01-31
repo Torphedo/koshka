@@ -24,11 +24,11 @@ iml_instr decode_branch(u32 instr) {
     case 0b010:
         if ((op1 & 0b1000) == 0) {
             LOG_MSG(debug, "Conditional branch (imm)\n");
-            out.branch_type = IML_BRANCH_CONDITIONAL;
+            out.branch_info.type = IML_BRANCH_CONDITIONAL;
         }
         break;
     case 0b110:
-        out.branch_type = IML_BRANCH_UNCONDITIONAL;
+        out.branch_info.type = IML_BRANCH_UNCONDITIONAL;
         if ((op1 & 0b1100) == 0) {
             LOG_MSG(debug, "Application exception\n");
         } else if (op1 == 0b0100) {
@@ -53,14 +53,14 @@ iml_instr decode_branch(u32 instr) {
         }
         printf(" #%d\n", dest);
 
-        out.branch_type = IML_BRANCH_UNCONDITIONAL;
+        out.branch_info.type = IML_BRANCH_UNCONDITIONAL;
     case 0b001:
         if ((op1 & 0b1000) == 0) {
             LOG_MSG(debug, "Compare & branch (imm)\n");
         } else {
             LOG_MSG(debug, "Test & branch (imm)\n");
         }
-        out.branch_type = IML_BRANCH_CONDITIONAL;
+        out.branch_info.type = IML_BRANCH_CONDITIONAL;
     default:
         break;
     }

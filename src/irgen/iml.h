@@ -8,6 +8,7 @@
 /// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
 
 #include <common/int.h>
+#include "pool.h"
 
 typedef enum {
     IML_OP_ADD,
@@ -43,10 +44,23 @@ typedef struct {
     // More specific categories
     union {
         // TODO: Maybe replace with flags instead of an enum if needed
-        iml_branch_type branch_type;
+        struct {
+            iml_branch_type type;
+            // Destination instruction, or POOL_INVALID_VALUE for
+            // branch-to-register.
+            pool_handle dest;
+        }branch_info;
     };
 
     iml_operand op1;
     iml_operand op2;
     iml_operand op3;
 }iml_instr;
+
+// Tree of IML instructions
+typedef struct {
+    // We use a pool for the entire tree so it's easily destroyed, and branches
+    // can reference their destination in a simple arch-independent way
+    pool_t instruction_pool;
+    pool_handle entry_point; // The first instruction
+}iml_program;

@@ -7,12 +7,13 @@ include_directories(src lib/bobtail)
 add_subdirectory(lib/bobtail)
 
 add_executable(koshka
-    src/regalloc.c
     src/main.c
-    src/os/nro.c
-    src/os/vmem.c
+    src/pool.c
+    src/regalloc.c
     src/irgen/decode.c
     src/irgen/arm_encoding.c
+    src/os/nro.c
+    src/os/vmem.c
 )
 
 target_link_libraries(koshka PUBLIC bobtail)
