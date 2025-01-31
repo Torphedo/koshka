@@ -12,6 +12,7 @@
 
 #include <regalloc.h>
 #include "arm_encoding.h"
+#include "bitmanip.h"
 
 iml_instr decode_branch(u32 instr) {
     iml_instr out = {.operation = IML_OP_BRANCH};
@@ -71,8 +72,9 @@ iml_instr decode_branch(u32 instr) {
 
 iml_instr decode_movw(u32 instr) {
     iml_instr out = {0};
-    const bool is_64bit = ((instr & (1 << 31)) != 0);
-    const u8 opc = (instr & (0b11 << 27)) >> 27;
+    const bool is_64bit = GET_SINGLE_BIT(instr, 31);
+    const u8 opc = GET_BIT_REGION(instr, 29, 30);
+    const u8 register_num = GET_BIT_REGION(instr, 0, 4);
     if (is_64bit) {
         switch (opc) {
         case 0b00:
@@ -80,10 +82,9 @@ iml_instr decode_movw(u32 instr) {
             break;
         case 0b10:
             LOG_MSG(debug, "MOVZ\n");
-            const u8 id = reg_alloc(instr & 0b1111);
             const u64 imm = (instr & (0xFFFF << 5)) >> 5;
             out.op1.type = IML_OPERAND_REGISTER;
-            out.op1.reg.id = id;
+            out.op1.reg.id = register_num;
 
             out.op2.type = IML_OPERAND_IMMEDIATE;
             out.op2.imm = imm;
@@ -92,7 +93,7 @@ iml_instr decode_movw(u32 instr) {
             LOG_MSG(debug, "MOVK\n");
             break;
         default:
-            LOG_MSG(debug, "INVALID\n");
+            LOG_MSG(debug, "INVALID (opc 0x%x)\n", opc);
             break;
         }
     }
@@ -103,7 +104,7 @@ iml_instr decode_movw(u32 instr) {
 iml_instr decode_data_imm(u32 instr) {
     LOG_MSG(debug, "Immediate instruction 0x%08X\n", instr);
     switch (data_imm_get_group(instr)) {
-    case MOV_WIDE:
+    case DATA_IMM_MOV_WIDE:
         decode_movw(instr);
         break;
     default:
@@ -160,26 +161,24 @@ iml_instr decode_load_store(u32 instr) {
 
 iml_instr decode(u32 instr) {
     switch (instr_get_group(instr)) {
-    case BRANCH:
+    case LVL1_BRANCH:
         return decode_branch(instr);
         break;
-    case DATA_IMM:
+    case LVL1_DATA_IMM:
         return decode_data_imm(instr);
         break;
-    case DATA_REG:
+    case LVL1_DATA_REG:
         return decode_data_reg(instr);
         break;
-    case LD_STR:
+    case LVL1_LD_STR:
         return decode_load_store(instr);
         break;
-    case DATA_SIMD:
+    case LVL1_DATA_SIMD:
         LOG_MSG(warning, "Unimplemented SIMD instruction 0x%08X\n", instr);
         break;
-    case UNALLOCATED:
-        LOG_MSG(error, "Invalid instruction 0x%08X\n", instr);
-        break;
+    case LVL1_UNALLOCATED:
     default:
-        LOG_MSG(warning, "Unimplemented instruction group 0x%08X\n", instr);
+        LOG_MSG(error, "Invalid instruction 0x%08X\n", instr);
         break;
     };
 

@@ -15,16 +15,21 @@
 #include <common/int.h>
 // Instructions are divided into a 3-level tree of "instruction pages", which
 // we use to quickly identify them.
+// - Level 1: Very broad category (branch, load/store, etc.)
+// - Level 2: Slightly more specific category (conditional branch, branch-to-register, etc.)
+// - Level 3: Identifies the specific instruction
+// Functions in this file narrow an instruction down to a level 2 page, but not
+// down to the specific instruction level.
 
-// Encodings for broad categories of instructions
+// Top-level instruction pages
 // See C4.1 on pg. C4-192
 typedef enum {
-    UNALLOCATED,
-    DATA_IMM,
-    BRANCH, // Also exception generating & system instructions
-    LD_STR,
-    DATA_REG,
-    DATA_SIMD, // (0b1111 << 25) && (0b0111 << 25) are the same group
+    LVL1_UNALLOCATED,
+    LVL1_DATA_IMM,
+    LVL1_BRANCH, // Also exception generating & system instructions
+    LVL1_LD_STR,
+    LVL1_DATA_REG,
+    LVL1_DATA_SIMD, // (0b1111 << 25) && (0b0111 << 25) are the same group
 }enc_cat;
 
 // Returns the top-level instruction page the instruction belongs into.
@@ -35,12 +40,13 @@ enc_cat instr_get_group(u32 instr);
 // Use only with instructions categorized as DATA_IMM with instr_get_group().
 // See C4.2 on pg. C4-193
 typedef enum {
-    PC_REL_ADR,  // Load PC-relative address into a register
-    ADDSUB_IMM,  // Add/subtract immediate value
-    LOGICAL_IMM, // Bitwise operation between register & imm. data
-    MOV_WIDE,    // MOV 16-bit value to register
-    BITFIELD,    // 
-    EXTRACT      //
+    DATA_IMM_UNALLOCATED, // Invalid instruction
+    DATA_IMM_PC_REL_ADDR, // Load PC-relative address into a register
+    DATA_IMM_ADDSUB_IMM,  // Add/subtract immediate value
+    DATA_IMM_LOGICAL_IMM, // Bitwise operation between register & imm. data
+    DATA_IMM_MOV_WIDE,    // MOV 16-bit value to register
+    DATA_IMM_BITFIELD,    // 
+    DATA_IMM_EXTRACT      //
 }data_imm_cat;
 data_imm_cat data_imm_get_group(u32 instr);
 

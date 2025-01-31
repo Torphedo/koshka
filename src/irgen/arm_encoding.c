@@ -14,14 +14,14 @@ typedef struct {
 // See pg. C4-192. This lookup table encodes the bit patterns to compare op0
 // against, and the resulting instruction page if they match.
 arm_page_entry top_instr_pagetable[] = {
-    {0b1110, 0b1000, DATA_IMM},
-    {0b1110, 0b1010, BRANCH},
-    {0b0101, 0b0100, LD_STR},
-    {0b0111, 0b0101, DATA_REG},
+    {0b1110, 0b1000, LVL1_DATA_IMM},
+    {0b1110, 0b1010, LVL1_BRANCH},
+    {0b0101, 0b0100, LVL1_LD_STR},
+    {0b0111, 0b0101, LVL1_DATA_REG},
 
     // For some reason these cases both indicate the same group.
-    {0b1111, 0b0111, DATA_SIMD},
-    {0b1111, 0b1111, DATA_SIMD},
+    {0b1111, 0b0111, LVL1_DATA_SIMD},
+    {0b1111, 0b1111, LVL1_DATA_SIMD},
 };
 
 enc_cat instr_get_group(u32 instr) {
@@ -35,17 +35,17 @@ enc_cat instr_get_group(u32 instr) {
     }
 
     // There was no matching pattern, instruction is invalid.
-    return UNALLOCATED;
+    return LVL1_UNALLOCATED;
 }
 
 // See C4.2 on pg. C4-193
 arm_page_entry data_imm_pagetable[] = {
-    {0b110, 0b000, PC_REL_ADR},
-    {0b110, 0b010, ADDSUB_IMM},
-    {0b111, 0b100, LOGICAL_IMM},
-    {0b111, 0b101, MOV_WIDE},
-    {0b111, 0b110, BITFIELD},
-    {0b111, 0b111, EXTRACT},
+    {0b110, 0b000, DATA_IMM_PC_REL_ADDR},
+    {0b110, 0b010, DATA_IMM_ADDSUB_IMM},
+    {0b111, 0b100, DATA_IMM_LOGICAL_IMM},
+    {0b111, 0b101, DATA_IMM_MOV_WIDE},
+    {0b111, 0b110, DATA_IMM_BITFIELD},
+    {0b111, 0b111, DATA_IMM_EXTRACT},
 };
 
 data_imm_cat data_imm_get_group(u32 instr) {
@@ -59,7 +59,7 @@ data_imm_cat data_imm_get_group(u32 instr) {
     }
 
     // There was no matching pattern, instruction is invalid.
-    return 0;
+    return DATA_IMM_UNALLOCATED;
 }
 
 data_reg_cat data_reg_get_group(u32 instr) {
