@@ -1,4 +1,11 @@
 #pragma once
+/// Less architecture-dependent representation of ARM code
+/// (aka intermediate /// language)
+///
+/// Takes heavy inspiration from the Cemu PPC Recompiler:
+/// https://github.com/cemu-project/Cemu/tree/main/src/Cafe/HW/Espresso/Recompiler
+/// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.h
+/// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
 
 #include <common/int.h>
 
@@ -35,6 +42,7 @@ typedef struct {
 
     // More specific categories
     union {
+        // TODO: Maybe replace with flags instead of an enum if needed
         iml_branch_type branch_type;
     };
 
