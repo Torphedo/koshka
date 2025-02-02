@@ -7,8 +7,8 @@
 #include <common/vfile.h>
 #include <common/logging.h>
 
-#include "irgen/decode.h"
-#include "irgen/bitmanip.h"
+#include "imlgen/decode.h"
+#include "bitmanip.h"
 
 bool file_is_elf(const char* path) {
     FILE* f = fopen(path, "rb");

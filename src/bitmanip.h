@@ -1,7 +1,7 @@
 #ifndef BITMANIP_H
 #define BITMANIP_H
 #include <assert.h>
-#include <common/int.h>
+#include "common/int.h"
 
 #define NUM_BITS(val) (sizeof(val) * 8)
 

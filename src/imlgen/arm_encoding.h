@@ -24,12 +24,12 @@
 // Top-level instruction pages
 // See C4.1 on pg. C4-192
 typedef enum {
-    LVL1_UNALLOCATED,
-    LVL1_DATA_IMM,
-    LVL1_BRANCH, // Also exception generating & system instructions
-    LVL1_LD_STR,
-    LVL1_DATA_REG,
-    LVL1_DATA_SIMD, // (0b1111 << 25) && (0b0111 << 25) are the same group
+    L1_UNALLOCATED,
+    L1_DATA_IMM,
+    L1_BRANCH, // Also exception generating & system instructions
+    L1_LD_STR, // Load/store
+    L1_DATA_REG,
+    L1_DATA_SIMD, // (0b1111 << 25) && (0b0111 << 25) are the same group
 }enc_cat;
 
 // Returns the top-level instruction page the instruction belongs into.
@@ -40,13 +40,13 @@ enc_cat instr_get_group(u32 instr);
 // Use only with instructions categorized as DATA_IMM with instr_get_group().
 // See C4.2 on pg. C4-193
 typedef enum {
-    DATA_IMM_UNALLOCATED, // Invalid instruction
-    DATA_IMM_PC_REL_ADDR, // Load PC-relative address into a register
-    DATA_IMM_ADDSUB_IMM,  // Add/subtract immediate value
-    DATA_IMM_LOGICAL_IMM, // Bitwise operation between register & imm. data
-    DATA_IMM_MOV_WIDE,    // MOV 16-bit value to register
-    DATA_IMM_BITFIELD,    // 
-    DATA_IMM_EXTRACT      //
+    L2_DATA_IMM_UNALLOCATED, // Invalid instruction
+    L2_DATA_IMM_PC_REL_ADDR, // Load PC-relative address into a register
+    L2_DATA_IMM_ADDSUB_IMM,  // Add/subtract immediate value
+    L2_DATA_IMM_LOGICAL_IMM, // Bitwise operation between register & imm. data
+    L2_DATA_IMM_MOV_WIDE,    // MOV 16-bit value to register
+    L2_DATA_IMM_BITFIELD,    //
+    L2_DATA_IMM_EXTRACT      //
 }data_imm_cat;
 data_imm_cat data_imm_get_group(u32 instr);
 
@@ -54,14 +54,14 @@ data_imm_cat data_imm_get_group(u32 instr);
 // Use only with instructions categorized as LD_STR with instr_get_group().
 // See C4.4 on pg. C4-202
 typedef enum {
-    SIMD_MULTI_STRUCT,
-    SIMD_MULTI_STRUCT_POST_IDX,
-    SIMD_SINGLE_STRUCT,
-    SIMD_SINGLE_STRUCT_POST_IDX,
+    L2_SIMD_MULTI_STRUCT,
+    L2_SIMD_MULTI_STRUCT_POST_IDX,
+    L2_SIMD_SINGLE_STRUCT,
+    L2_SIMD_SINGLE_STRUCT_POST_IDX,
 
-    EXCLUSIVE,
-    REG_LITERAL,
-    REGPAIR_NO_ALLOC // 
+    L2_EXCLUSIVE,
+    L2_REG_LITERAL,
+    L2_REGPAIR_NO_ALLOC //
 }ld_str_cat;
 ld_str_cat ld_str_get_group(u32 instr);
 
@@ -70,26 +70,26 @@ ld_str_cat ld_str_get_group(u32 instr);
 // See C4.5 on pg. C4-224
 typedef enum {
     // Data processing w/ different numbers of sources
-    DATA_REG_3_SOURCES,
-    DATA_REG_2_SOURCES,
-    DATA_REG_1_SOURCE,
+    L2_DATA_REG_3_SOURCES,
+    L2_DATA_REG_2_SOURCES,
+    L2_DATA_REG_1_SOURCE,
 
-    DATA_REG_LOGICAL_SHIFT,
+    L2_DATA_REG_LOGICAL_SHIFT,
 
     // Add/subtract
-    DATA_REG_ADDSUB_SHIFT,
-    DATA_REG_ADDSUB_EXTEND,
-    DATA_REG_ADDSUB_CARRY,
+    L2_DATA_REG_ADDSUB_SHIFT,
+    L2_DATA_REG_ADDSUB_EXTEND,
+    L2_DATA_REG_ADDSUB_CARRY,
 
     // Conditional compare with register or immediate
-    DATA_REG_COND_COMP_REG,
-    DATA_REG_COND_COMP_IMM,
+    L2_DATA_REG_COND_COMP_REG,
+    L2_DATA_REG_COND_COMP_IMM,
 
     // Conditional select
-    DATA_REG_COND_SEL,
+    L2_DATA_REG_COND_SEL,
 
     // Invalid instruction
-    DATA_REG_UNALLOCATED,
+    L2_DATA_REG_UNALLOCATED,
 }data_reg_cat;
 data_reg_cat data_reg_get_group(u32 instr);
 

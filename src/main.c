@@ -6,11 +6,9 @@
 #include <common/logging.h>
 #include <common/file.h>
 
-#include "common/file.h"
-#include "common/vfile.h"
 #include "os/nro.h"
 
-#include "irgen/decode.h"
+#include "imlgen/decode.h"
 #include "elf.h"
 
 int main(int argc, char** argv) {

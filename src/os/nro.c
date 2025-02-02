@@ -6,7 +6,6 @@
 #include <common/vfile.h>
 #include <common/logging.h>
 
-#include "irgen/decode.h"
 #include "nro.h"
 #include "vmem.h"
 #include "module.h"
