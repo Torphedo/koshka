@@ -104,9 +104,9 @@ data_reg_cat data_reg_get_group(u32 instr) {
 
         if (op2 == 0b0110) {
             if (op0 == 0) {
-                return DATA_REG_1_SOURCE;
-            } else {
                 return DATA_REG_2_SOURCES;
+            } else {
+                return DATA_REG_1_SOURCE;
             }
         }
 
