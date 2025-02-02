@@ -1,4 +1,4 @@
 _start:
-    mov r0, #0x10
-    add r0, #0x1
+    mov x0, #1
+    mov x1, #2
 
