@@ -10,6 +10,8 @@
 
 #define GET_SINGLE_BIT(val, bit) (((val) >> (bit)) & 1)
 
+#define HAS_BIT_FLAG(val, flag) (((val) & (flag)) != 0)
+
 // Mask out a region of bits.
 // The first half discards the lower bits, and the second half discards the higher bits.
 #define GET_BIT_REGION(val, bit_low, bit_high) (((val) & (SET_ALL(val) >> (NUM_BITS(val) - bit_high - 1))) >> (bit_low))

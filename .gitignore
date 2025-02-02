@@ -9,6 +9,7 @@ compile_commands.json
 manul/
 
 # Build output
+.zig-cache/
 out/
 koshka
 

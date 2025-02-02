@@ -11,6 +11,7 @@
 #include "os/nro.h"
 
 #include "irgen/decode.h"
+#include "elf.h"
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -22,6 +23,11 @@ int main(int argc, char** argv) {
     if (path_has_extension(path, ".nro")) {
         module program = nro_load("illuminatiNX.nro");
         return 0;
+    }
+
+    if (file_is_elf(path)) {
+        load_elf(path);
+        return EXIT_SUCCESS;
     }
 
     const s64 size = file_size(path);

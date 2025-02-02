@@ -18,8 +18,8 @@ iml_instr decode_branch(u32 instr) {
     iml_instr out = {.operation = IML_OP_BRANCH};
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
     // See C4.3, pg. C4-197 for the table defining all these values & cases.
-    u8 op0 = instr >> 29;
-    u8 op1 = (instr >> 22) & 0xF;
+    const u8 op0 = GET_BIT_REGION(instr, 29, 31);
+    const u8 op1 = GET_BIT_REGION(instr, 22, 25);
 
     switch (op0) {
     case 0b010:
@@ -47,7 +47,7 @@ iml_instr decode_branch(u32 instr) {
         bool call = op0 & 0b100; // Top bit indicates if it's a subroutine call
         // Least significant 26 bits * 4. See C6.6.20, pg. C6-463
         // 32-bit max is 64x the 26-bit max, so multiplying by 4 is fine.
-        s32 dest = (instr & ~(0b111111 << 26)) * 4;
+        const s32 dest = (instr & ~(0b111111 << 26)) * 4;
         LOG_MSG(info, "b");
         if (call) {
             printf("l");
