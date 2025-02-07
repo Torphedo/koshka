@@ -53,12 +53,10 @@ u8* load_elf(const char* path) {
         fread(&prog_header, sizeof(prog_header), 1, f);
         const s64 size = prog_header.sh_size;
         if (prog_header.sh_type != SHT_PROGBITS) {
-            LOG_MSG(warning, "Skipping section %u, (doesn't have code)\n", i);
             continue;
         }
 
         if (!HAS_BIT_FLAG(prog_header.sh_flags, SHF_EXECINSTR)) {
-            LOG_MSG(warning, "Skipping section %u, (not marked executable)!\n", i);
             continue;
         }
 

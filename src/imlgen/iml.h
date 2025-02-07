@@ -9,17 +9,36 @@
 
 #include <common/int.h>
 #include "pool.h"
+#include "arm_encoding.h"
 
 typedef enum {
-    IML_OP_ADD,
-    IML_OP_ADD_CARRY,
-    IML_OP_BRANCH,
-}iml_op;
+    DATA_OP_ADD,
+    DATA_OP_SUB,
+    DATA_OP_MUL,
+    DATA_OP_DIV,
 
-typedef enum {
-    IML_BRANCH_UNCONDITIONAL,
-    IML_BRANCH_CONDITIONAL,
-}iml_branch_type;
+    // Multiply & add/sub
+    DATA_OP_MUL_ADD,
+    DATA_OP_MUL_SUB,
+
+    // Logical left/right shift
+    DATA_OP_LSL,
+    DATA_OP_LSR,
+
+    // Arithmetic left/right shift
+    DATA_OP_ASL,
+    DATA_OP_ASR,
+
+    // Rotate left/right
+    DATA_OP_ROL,
+    DATA_OP_ROR,
+
+    // Bitwise operations
+    DATA_OP_AND,
+    DATA_OP_OR,
+    DATA_OP_XOR,
+    DATA_OP_NEG, // Negate
+}iml_math_op;
 
 typedef enum {
     IML_OPERAND_REGISTER,
@@ -32,34 +51,41 @@ typedef struct {
         struct {
             // 5 bits is enough for any "normal" ARM or x86 register number
             u8 id: 5;
-            // Instructions can reference just the 32-bit portion of a 64-bit
-            // register, or the whole thing
-            bool is_32bit: 1;
+            // Operation to apply to the register (usually shifting)
+            iml_math_op operation;
+            // Amount of shift/rotate/etc. to apply. Set to 0 if N/A
+            u8 op_amount;
+            bool negate; // Optionally negate the register
         }reg;
         u16 imm;
     };
 }iml_operand;
 
+// Specialized format for load/store instructions
 typedef struct {
-    // TODO: Break into more hierarchical operation types to reduce switch cases
 
-    // Categorizes instructions into the broad categories from the ARM spec
-    iml_op operation;
+}iml_instr_load_store;
 
-    // More specific categories
+// Specialized format for instructions that operate on simple integer data
+// (single destination, non-SIMD)
+typedef struct {
+    // Destinations in this type of instruction are always a register
+    u8 dest_register;
+    iml_math_op operation;
+    iml_operand sources[3];
+}iml_instr_data;
+
+typedef struct {
+    // Different variants of instruction
+    L1_page variant;
     union {
-        // TODO: Maybe replace with flags instead of an enum if needed
-        struct {
-            iml_branch_type type;
-            // Destination instruction, or POOL_INVALID_VALUE for
-            // branch-to-register.
-            pool_handle dest;
-        }branch_info;
+        iml_instr_data math;
+        iml_instr_load_store load_store;
     };
 
-    iml_operand op1;
-    iml_operand op2;
-    iml_operand op3;
+    // Instructions can reference just the 32-bit portion of a 64-bit
+    // register, or the whole thing
+    bool is_64bit;
 }iml_instr;
 
 // Tree of IML instructions

@@ -15,7 +15,7 @@
 #include "bitmanip.h"
 
 iml_instr decode_branch(u32 instr) {
-    iml_instr out = {.operation = IML_OP_BRANCH};
+    iml_instr out = {0};
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
     // See C4.3, pg. C4-197 for the table defining all these values & cases.
     const u8 op0 = GET_BIT_REGION(instr, 29, 31);
@@ -25,11 +25,9 @@ iml_instr decode_branch(u32 instr) {
     case 0b010:
         if ((op1 & 0b1000) == 0) {
             LOG_MSG(debug, "Conditional branch (imm)\n");
-            out.branch_info.type = IML_BRANCH_CONDITIONAL;
         }
         break;
     case 0b110:
-        out.branch_info.type = IML_BRANCH_UNCONDITIONAL;
         if ((op1 & 0b1100) == 0) {
             LOG_MSG(debug, "Application exception\n");
         } else if (op1 == 0b0100) {
@@ -54,14 +52,12 @@ iml_instr decode_branch(u32 instr) {
         }
         printf(" #%d\n", dest);
 
-        out.branch_info.type = IML_BRANCH_UNCONDITIONAL;
     case 0b001:
         if ((op1 & 0b1000) == 0) {
             LOG_MSG(debug, "Compare & branch (imm)\n");
         } else {
             LOG_MSG(debug, "Test & branch (imm)\n");
         }
-        out.branch_info.type = IML_BRANCH_CONDITIONAL;
     default:
         break;
     }
@@ -83,11 +79,6 @@ iml_instr decode_movw(u32 instr) {
         case 0b10:
             LOG_MSG(debug, "MOVZ\n");
             const u64 imm = (instr & (0xFFFF << 5)) >> 5;
-            out.op1.type = IML_OPERAND_REGISTER;
-            out.op1.reg.id = register_num;
-
-            out.op2.type = IML_OPERAND_IMMEDIATE;
-            out.op2.imm = imm;
             break;
         case 0b11:
             LOG_MSG(debug, "MOVK\n");

@@ -1,6 +1,7 @@
 #ifndef A64_ENC_H
 #define A64_ENC_H
 /* Helper functions & enums for decoding ARMv8 instructions.
+ * We basically turn the ARM encoding into enums that can be switched over.
  *
  * The Tegra X1 uses a Cortex A57 design, which implements ARMv8.0.
  * So, the ISA manual we reference is issue A.k of the ARMv8-A manual:
@@ -30,11 +31,11 @@ typedef enum {
     L1_LD_STR, // Load/store
     L1_DATA_REG,
     L1_DATA_SIMD, // (0b1111 << 25) && (0b0111 << 25) are the same group
-}enc_cat;
+}L1_page;
 
 // Returns the top-level instruction page the instruction belongs into.
 // UNALLOCATED means the instruction is invalid.
-enc_cat instr_get_group(u32 instr);
+L1_page instr_get_group(u32 instr);
 
 // Categories of data processing instructions with immediate values.
 // Use only with instructions categorized as DATA_IMM with instr_get_group().
@@ -47,10 +48,24 @@ typedef enum {
     L2_DATA_IMM_MOV_WIDE,    // MOV 16-bit value to register
     L2_DATA_IMM_BITFIELD,    //
     L2_DATA_IMM_EXTRACT      //
-}data_imm_cat;
-data_imm_cat data_imm_get_group(u32 instr);
+}L2_data_imm_page;
+L2_data_imm_page data_imm_get_group(u32 instr);
 
-// Categories of load/store instructions.
+// Categories of branch instructions
+// Use only with instructions categorized as L1_BRANCH with instr_get_group().
+typedef enum {
+    L2_BRANCH_CONDITIONAL,
+    L2_BRANCH_EXCEPTION,
+    L2_BRANCH_SYSTEM,
+    L2_BRANCH_UNCONDITIONAL_REG,
+    L2_BRANCH_UNCONDITIONAL_IMM,
+    L2_BRANCH_COMPARE, // Compares an entire register
+    L2_BRANCH_TEST, // Compares a single bit in a register
+    L2_BRANCH_UNALLOCATED, // Compares a single bit in a register
+}L2_branch_page;
+L2_branch_page branch_get_group(u32 instr);
+
+// Categories of load/store [memory operation] instructions.
 // Use only with instructions categorized as LD_STR with instr_get_group().
 // See C4.4 on pg. C4-202
 typedef enum {
@@ -62,8 +77,8 @@ typedef enum {
     L2_EXCLUSIVE,
     L2_REG_LITERAL,
     L2_REGPAIR_NO_ALLOC //
-}ld_str_cat;
-ld_str_cat ld_str_get_group(u32 instr);
+}L2_mem_page;
+L2_mem_page ld_str_get_group(u32 instr);
 
 // Categories of data processing on registers
 // Use only with instructions categorized as DATA_REG with instr_get_group().
@@ -90,7 +105,7 @@ typedef enum {
 
     // Invalid instruction
     L2_DATA_REG_UNALLOCATED,
-}data_reg_cat;
-data_reg_cat data_reg_get_group(u32 instr);
+}L2_data_reg_page;
+L2_data_reg_page data_reg_get_group(u32 instr);
 
 #endif // #ifndef A64_ENC_H

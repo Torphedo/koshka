@@ -24,7 +24,7 @@ arm_page_entry top_instr_pagetable[] = {
     {0b1111, 0b1111, L1_DATA_SIMD},
 };
 
-enc_cat instr_get_group(u32 instr) {
+L1_page instr_get_group(u32 instr) {
     const u8 op0 = GET_BIT_REGION(instr, 25, 29);
 
     for (u32 i = 0; i < ARRAY_SIZE(top_instr_pagetable); i++) {
@@ -48,7 +48,7 @@ arm_page_entry data_imm_pagetable[] = {
     {0b111, 0b111, L2_DATA_IMM_EXTRACT},
 };
 
-data_imm_cat data_imm_get_group(u32 instr) {
+L2_data_imm_page data_imm_get_group(u32 instr) {
     const u8 op0 = ((instr & (0b111 << 23)) >> 23);
 
     for (u32 i = 0; i < ARRAY_SIZE(data_imm_pagetable); i++) {
@@ -58,11 +58,47 @@ data_imm_cat data_imm_get_group(u32 instr) {
         }
     }
 
-    // There was no matching pattern, instruction is invalid.
+    // No matching pattern, instruction is invalid.
     return L2_DATA_IMM_UNALLOCATED;
 }
 
-data_reg_cat data_reg_get_group(u32 instr) {
+// See C4.3 on pg. C4-197
+L2_branch_page branch_get_group(u32 instr) {
+    const u8 op0 = GET_BIT_REGION(instr, 29, 31);
+    const u8 op1 = GET_BIT_REGION(instr, 22, 25);
+
+    if (op0 == 0b010) {
+        if ((op1 & 0b1000) == 0) {
+            return L2_BRANCH_CONDITIONAL;
+        }
+    }
+    else if (op0 == 0b110) {
+        if ((op1 & 0b1100) == 0) {
+            return L2_BRANCH_EXCEPTION;
+        }
+        else if (op1 == 0b0100) {
+            return L2_BRANCH_SYSTEM;
+        }
+        else if ((op1 & 0b1000) == 0b1000) {
+            return L2_BRANCH_UNCONDITIONAL_REG;
+        }
+    }
+    else if ((op0 & 0b011) == 0) {
+        return L2_BRANCH_UNCONDITIONAL_IMM;
+    }
+    else if ((op0 & 0b011) == 0b01) {
+        if (op0 & 0b1000) {
+            return L2_BRANCH_COMPARE;
+        } else {
+            return L2_BRANCH_TEST;
+        }
+    }
+
+    // No match, instruction is invalid
+    return L2_BRANCH_UNALLOCATED;
+}
+
+L2_data_reg_page data_reg_get_group(u32 instr) {
     const u8 op0 = GET_SINGLE_BIT(instr, 30);
     const u8 op1 = GET_SINGLE_BIT(instr, 28);
     const u8 op2 = GET_BIT_REGION(instr, 21, 24);
