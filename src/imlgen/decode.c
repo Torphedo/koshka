@@ -92,12 +92,59 @@ iml_instr decode_movw(u32 instr) {
     return out;
 }
 
+// Decoding for L2_DATA_IMM_ADDSUB_IMM
+iml_instr decode_addsub_imm(u32 instr) {
+    // These names match the spec on pg. C4-193, except "sf" and "S" which are renamed
+    const bool is_64bit = GET_SINGLE_BIT(instr, 31);
+    const u8 op = GET_SINGLE_BIT(instr, 30);
+    const bool set_flags = GET_SINGLE_BIT(instr, 29);
+    const u8 shift = GET_BIT_REGION(instr, 22, 23);
+    u32 imm = GET_BIT_REGION(instr, 10, 21);
+    const u8 Rn = GET_BIT_REGION(instr, 5, 9);
+    const u8 Rd = GET_BIT_REGION(instr, 0, 4);
+
+    // Immediate can be optionally shifted
+    if (shift == 0b01) {
+        imm <<= 12;
+    }
+
+    const iml_instr iml = {
+        .is_64bit = is_64bit,
+        .variant = L1_DATA_IMM,
+        .data = {
+            .dest_register = Rd,
+            .set_flags = set_flags,
+            .operation = op ? DATA_OP_ADD : DATA_OP_SUB,
+            .sources[0] = {
+                .type = IML_OPERAND_REGISTER,
+                .reg = Rn,
+                .exists = true,
+            },
+            .sources[1] = {
+                .type = IML_OPERAND_IMMEDIATE,
+                .imm = imm,
+                .exists = true,
+            },
+        },
+    };
+    
+    return iml;
+}
+
 iml_instr decode_data_imm(u32 instr) {
     LOG_MSG(debug, "Immediate instruction 0x%08X\n", instr);
     switch (data_imm_get_group(instr)) {
     case L2_DATA_IMM_MOV_WIDE:
-        decode_movw(instr);
+        return decode_movw(instr);
         break;
+    case L2_DATA_IMM_ADDSUB_IMM:
+        return decode_addsub_imm(instr);
+        break;
+    case L2_DATA_IMM_UNALLOCATED:
+    case L2_DATA_IMM_PC_REL_ADDR:
+    case L2_DATA_IMM_LOGICAL_IMM:
+    case L2_DATA_IMM_BITFIELD:
+    case L2_DATA_IMM_EXTRACT:
     default:
         LOG_MSG(warning, "Unimplemented\n");
         break;

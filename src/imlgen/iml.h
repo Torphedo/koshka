@@ -49,6 +49,11 @@ typedef enum {
     DATA_OP_MOVZ,
     DATA_OP_MOVK,
     // No need for MOVN, we'll handle that during decoding
+
+
+    DATA_OP_BITFIELD_MOV,
+    DATA_OP_BITFIELD_MOV_SIGNED,
+    DATA_OP_BITFIELD_MOV_UNSIGNED,
 }iml_math_op;
 
 typedef enum {
