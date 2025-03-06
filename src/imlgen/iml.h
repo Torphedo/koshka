@@ -1,11 +1,17 @@
 #pragma once
 /// Less architecture-dependent representation of ARM code
-/// (aka intermediate /// language)
+/// (aka intermediate language)
 ///
 /// Takes heavy inspiration from the Cemu PPC Recompiler:
 /// https://github.com/cemu-project/Cemu/tree/main/src/Cafe/HW/Espresso/Recompiler
 /// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.h
 /// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
+///
+/// For the moment we're trying to split instructions into the simplest
+/// possible operations, so 1 ARM instruction might create multiple IML
+/// instructions (e.g. add immediate with negate would be an immediate add,
+/// then a negate). Some instructions modify an immediate value before use to
+/// save space, for the moment we'll just do that ahead of time in this stage.
 
 #include <common/int.h>
 #include "pool.h"
@@ -38,26 +44,29 @@ typedef enum {
     DATA_OP_OR,
     DATA_OP_XOR,
     DATA_OP_NEG, // Negate
+
+    // Different variants of moving data between registers
+    DATA_OP_MOVZ,
+    DATA_OP_MOVK,
+    // No need for MOVN, we'll handle that during decoding
 }iml_math_op;
 
 typedef enum {
-    IML_OPERAND_REGISTER,
     IML_OPERAND_IMMEDIATE,
+    IML_OPERAND_REGISTER,
 }iml_operand_type;
 
 typedef struct {
+    // Operand can be either a register or immediate value
     iml_operand_type type: 2;
+    // The poor man's std::optional, set true if there's meaningful data in this entry
+    bool exists: 1;
     union {
-        struct {
-            // 5 bits is enough for any "normal" ARM or x86 register number
-            u8 id: 5;
-            // Operation to apply to the register (usually shifting)
-            iml_math_op operation;
-            // Amount of shift/rotate/etc. to apply. Set to 0 if N/A
-            u8 op_amount;
-            bool negate; // Optionally negate the register
-        }reg;
-        u16 imm;
+        u8 reg; // Register ID
+        // The immediate can be as large as a 64-bit bitmask
+        // TODO: See if we can separate the 32-bit and 64-bit variant to save
+        // space on the IML tree
+        u64 imm;
     };
 }iml_operand;
 
@@ -71,21 +80,31 @@ typedef struct {
 typedef struct {
     // Destinations in this type of instruction are always a register
     u8 dest_register;
+    bool set_flags: 1; // Whether to set CPU state flags with operation result
+    // If set, clear the rest of the register to 0 when doing a MOV operation.
+    // Otherwise, leave them alone.
+    bool mov_zero: 1;
     iml_math_op operation;
-    iml_operand sources[3];
+    iml_operand sources[3]; // Up to 3 operands, could be immediate or register
 }iml_instr_data;
 
 typedef struct {
     // Different variants of instruction
     L1_page variant;
     union {
-        iml_instr_data math;
+        iml_instr_data data; // Data-processing instructions
         iml_instr_load_store load_store;
     };
 
     // Instructions can reference just the 32-bit portion of a 64-bit
     // register, or the whole thing
-    bool is_64bit;
+    bool is_64bit: 1;
+
+    // Whether CPU state flags may be modified
+    bool touched_negative_flag: 1;
+    bool touched_zero_flag: 1;
+    bool touched_carry_flag: 1;
+    bool touched_overflow_flag: 1;
 }iml_instr;
 
 // Tree of IML instructions
