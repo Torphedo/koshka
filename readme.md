@@ -11,15 +11,16 @@ that design is my end goal.
 My design has a few distinct layers/stages, each dependent on the last. This is
 roughly based on my high-level knowledge of compilers and Cemu's own PowerPC
 recompiler. Here are the rough steps handled by (or planned for) each stage:
-IRGen (IR being "Intermediate Representation):
+
+### IRGen (Intermediate Representation)
   - Convert ARM code to a tree of instructions, attached to their memory/register operands
   - Replace constant branches with references to the target instruction node
 
-Shatter:
+### Shatter
   - Split IR into a tree of functions, which we can treat like small
     independent programs.
 
-RegAlloc:
+### RegAlloc
   - In each function, replace ARM register operands with x86 ones, or stack
     operations when we run out.
   - Store metadata with the function about which registers map to what. If we
@@ -27,18 +28,18 @@ RegAlloc:
     this is like a transformation matrix to take us between coordinate systems.
     See the codegen section for details.
 
-Codegen:
-    - Emit x86 code for each operation of each function.
-    - Across function calls the register allocation will change, so we need to
+### Codegen
+  - Emit x86 code for each operation of each function.
+  - Across function calls the register allocation will change, so we need to
     generate code to adjust for it.
 
-    In short:
-    - Emit code to shuffle registers around and match the callee's mapping
-    - Make function call
-    - Emit code to shuffle registers around and match our mapping
+  In short:
+  - Emit code to shuffle registers around and match the callee's mapping
+  - Make function call
+  - Emit code to shuffle registers around and match our mapping
 
-    A simple mapping translation might look like, in terms of the instructions
-    generated on the way in and out of each function:
+  A simple mapping translation might look like this, in terms of the instructions
+  generated on the way in and out of each function:
 
     func1_mapping:
     r18 -> rax
@@ -63,12 +64,12 @@ Codegen:
     - pop rax from stack
     - Our mapping is now back to normal, continue
 
-    Some notes:
+  Some notes:
 
-    - This might mess up offsets for arguments passed on the stack... so we
+  - This might mess up offsets for arguments passed on the stack... so we
     might need to have some register storage at the base of the stack like Cemu.
 
-    - When we hit a branch-to-register, use Cemu's strategy of emitting a call
+  - When we hit a branch-to-register, use Cemu's strategy of emitting a call
     back to the translator. It'll look up the address and translate it. Then it
     overwrites the calling instruction (known via the return address) with a
     branch to the translated code. The emitted callback should be the same size
