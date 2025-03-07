@@ -1,6 +1,7 @@
 // Page numbers in this file reference the same ISA manual as the rest of the code
 #include "decode.h"
 
+#include <assert.h>
 #include <stdbool.h>
 #include <malloc.h>
 
@@ -10,10 +11,9 @@
 #include <common/file.h>
 #include <common/queue.h>
 
-#include <regalloc.h>
+#include <pool.h>
 #include "arm_encoding.h"
 #include "bitmanip.h"
-#include "pool.h"
 
 void decode_branch(iml_program* prog, u32 instr) {
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
@@ -190,6 +190,8 @@ void decode_load_store(iml_program* prog, u32 instr) {
 }
 
 bdest decode(iml_program* prog, u32 instr) {
+    assert(prog != NULL);
+    assert(instr != 0);
     switch (instr_get_group(instr)) {
     case L1_BRANCH:
         // TODO: Return branch destinations

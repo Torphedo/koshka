@@ -1,3 +1,4 @@
+#include <assert.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -11,6 +12,7 @@
 #include "bitmanip.h"
 
 bool file_is_elf(const char* path) {
+    assert(path != NULL);
     FILE* f = fopen(path, "rb");
     if (f == NULL) {
         return NULL;
@@ -27,6 +29,7 @@ bool file_is_elf(const char* path) {
 }
 
 u8* load_elf(const char* path) {
+    assert(path != NULL);
     FILE* f = fopen(path, "rb");
     if (f == NULL) {
         return NULL;

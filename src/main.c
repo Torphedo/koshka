@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     }
     char* path = argv[1];
     if (path_has_extension(path, ".nro")) {
-        module program = nro_load("illuminatiNX.nro");
+        module program = nro_load(path);
         return 0;
     }
 

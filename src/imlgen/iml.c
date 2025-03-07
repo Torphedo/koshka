@@ -3,9 +3,11 @@
 #include "decode.h"
 #include <pool.h>
 
+#include <assert.h>
 #include <stdbool.h>
 
 void imlgen_recurse(iml_program* prog, pool_handle pos) {
+    assert(prog != NULL);
     const u32* arm_instr = pool_getdata(prog->arm_pool, pos);
     // Decoding function returns branch destinations if they exist
     const bdest branch = decode(prog, *arm_instr);
@@ -27,6 +29,8 @@ void imlgen_recurse(iml_program* prog, pool_handle pos) {
 }
 
 iml_program imlgen(u8* arm_code, u32 size) {
+    assert(arm_code != NULL);
+    assert(size > 0);
     iml_program out = {
         .iml_pool = pool_open(50 * sizeof(iml_instr)),
         .arm_pool = pool_open(size),

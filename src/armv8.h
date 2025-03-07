@@ -1,5 +1,4 @@
-#ifndef ARMV8_H
-#define ARMV8_H
+#pragma once
 
 #include <common/int.h>
 
@@ -77,6 +76,3 @@ typedef struct {
     u64 fpcr[2];
     u64 fpsr[2];
 }cpu_ctx;
-
-#endif // #ifndef ARMV8_H
-

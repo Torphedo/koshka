@@ -1,5 +1,4 @@
-#ifndef REGALLOC_H
-#define REGALLOC_H
+#pragma once
 
 #include <common/int.h>
 
@@ -33,6 +32,3 @@ s8 reg_alloc(u8 arm_reg_id);
 
 // Reset all stored register mappings to 0.
 void reg_reset();
-
-#endif // #ifndef REGALLOC_H
-
