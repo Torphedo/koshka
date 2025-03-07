@@ -5,10 +5,8 @@
 
 #include <elf_structure.h>
 #include <common/int.h>
-#include <common/vfile.h>
 #include <common/logging.h>
 
-#include "imlgen/decode.h"
 #include "bitmanip.h"
 
 bool file_is_elf(const char* path) {
@@ -28,8 +26,9 @@ bool file_is_elf(const char* path) {
     return false;
 }
 
-u8* load_elf(const char* path) {
+u8* load_elf(const char* path, s64* size_out) {
     assert(path != NULL);
+    assert(size_out != NULL);
     FILE* f = fopen(path, "rb");
     if (f == NULL) {
         return NULL;
@@ -71,10 +70,10 @@ u8* load_elf(const char* path) {
 
         // Jump to section
         fseek(f, prog_header.sh_offset, SEEK_SET);
-        LOG_MSG(debug, "Decoding 0x%x-byte section @ 0x%x\n", size, prog_header.sh_offset);
+        LOG_MSG(debug, "Loading 0x%x-byte section @ 0x%x\n", size, prog_header.sh_offset);
 
         // Allocate & read code
-        u8* buf = calloc(1, size);
+        u8* buf = malloc(size); // We immediately overwrite, no need for calloc
         if (buf == NULL) {
             LOG_MSG(error, "Failed to allocate 0x%x bytes for ARM code!\n", size);
             fclose(f);
@@ -82,10 +81,13 @@ u8* load_elf(const char* path) {
         }
 
         fread(buf, size, 1, f);
-        // We assume the file just has ARM assembly
-        const iml_program prog = imlgen(buf, size);
-        free(buf);
+        fclose(f);
+
+        // Return ARM code buffer
+        *size_out = size;
+        return buf;
     }
 
+    fclose(f);
     return NULL;
 }

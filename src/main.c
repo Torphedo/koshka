@@ -23,21 +23,25 @@ int main(int argc, char** argv) {
         return 0;
     }
 
+    s64 size = 0;
+    u8* arm_buf = NULL;
     if (file_is_elf(path)) {
-        load_elf(path);
-        return EXIT_SUCCESS;
+        arm_buf = load_elf(path, &size);
+    } else {
+        // We assume the file just has ARM assembly
+        size = file_size(path);
+        arm_buf = file_load(path);
+        if (arm_buf == NULL) {
+            LOG_MSG(error, "Failed to load ARM assembly file \"%s\"\n", path);
+            return EXIT_FAILURE;
+        }
     }
 
-    const s64 size = file_size(path);
-    u8* arm_buf = file_load(path);
-    if (arm_buf == NULL) {
-        LOG_MSG(error, "Failed to load ARM assembly file \"%s\"\n", path);
-        return EXIT_FAILURE;
-    }
-
-    // We assume the file just has ARM assembly
     vfile arm_code = vfile_open(arm_buf, size);
+    LOG_MSG(debug, "Generating IML for %d ARM instructions", size / 4);
     const iml_program prog = imlgen(arm_buf, size);
+    // TODO: Do shatter here
+    // TODO: Do register allocation here
 
     return EXIT_SUCCESS;
 }

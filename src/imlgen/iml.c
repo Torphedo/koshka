@@ -33,7 +33,10 @@ iml_program imlgen(u8* arm_code, u32 size) {
     assert(size > 0);
     iml_program out = {
         .iml_pool = pool_open(50 * sizeof(iml_instr)),
-        .arm_pool = pool_open(size),
+        .arm_pool = {
+            .data = (uintptr_t)arm_code,
+            .alloc_size = size,
+        },
         .branch_dests = list_create(50 * sizeof(s64), sizeof(s64)),
     };
 
