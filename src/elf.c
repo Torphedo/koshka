@@ -80,11 +80,7 @@ u8* load_elf(const char* path) {
 
         fread(buf, size, 1, f);
         // We assume the file just has ARM assembly
-        vfile vf = vfile_open(buf, size);
-        while (vfile_opcheck(&vf, sizeof(u32))) {
-            const u32 arm_instr = VFILE_READ(u32, &vf);
-            const iml_instr iml = decode(arm_instr);
-        }
+        const iml_program prog = imlgen(buf, size);
         free(buf);
     }
 

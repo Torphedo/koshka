@@ -11,6 +11,7 @@ add_executable(koshka
     src/elf.c
     src/pool.c
     src/regalloc.c
+    src/imlgen/iml.c
     src/imlgen/decode.c
     src/imlgen/arm_encoding.c
     src/os/nro.c

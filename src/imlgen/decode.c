@@ -13,9 +13,9 @@
 #include <regalloc.h>
 #include "arm_encoding.h"
 #include "bitmanip.h"
+#include "pool.h"
 
-iml_instr decode_branch(u32 instr) {
-    iml_instr out = {0};
+void decode_branch(iml_program* prog, u32 instr) {
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
     // See C4.3, pg. C4-197 for the table defining all these values & cases.
     const u8 op0 = GET_BIT_REGION(instr, 29, 31);
@@ -61,13 +61,9 @@ iml_instr decode_branch(u32 instr) {
     default:
         break;
     }
-
-    // This can only be reached if it reaches none of the valid cases.
-    return out;
 }
 
-iml_instr decode_movw(u32 instr) {
-    iml_instr out = {0};
+void decode_movw(iml_program* prog, u32 instr) {
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 opc = GET_BIT_REGION(instr, 29, 30);
     const u8 register_num = GET_BIT_REGION(instr, 0, 4);
@@ -88,12 +84,10 @@ iml_instr decode_movw(u32 instr) {
             break;
         }
     }
-
-    return out;
 }
 
 // Decoding for L2_DATA_IMM_ADDSUB_IMM
-iml_instr decode_addsub_imm(u32 instr) {
+void decode_addsub_imm(iml_program* prog, u32 instr) {
     // These names match the spec on pg. C4-193, except "sf" and "S" which are renamed
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 op = GET_SINGLE_BIT(instr, 30);
@@ -128,17 +122,18 @@ iml_instr decode_addsub_imm(u32 instr) {
         },
     };
     
-    return iml;
+    // Add the IML to the pool
+    pool_push(&prog->instruction_pool, &iml, sizeof(iml), sizeof(iml));
 }
 
-iml_instr decode_data_imm(u32 instr) {
+void decode_data_imm(iml_program* prog, u32 instr) {
     LOG_MSG(debug, "Immediate instruction 0x%08X\n", instr);
     switch (data_imm_get_group(instr)) {
     case L2_DATA_IMM_MOV_WIDE:
-        return decode_movw(instr);
+        decode_movw(prog, instr);
         break;
     case L2_DATA_IMM_ADDSUB_IMM:
-        return decode_addsub_imm(instr);
+        decode_addsub_imm(prog, instr);
         break;
     case L2_DATA_IMM_UNALLOCATED:
     case L2_DATA_IMM_PC_REL_ADDR:
@@ -149,10 +144,9 @@ iml_instr decode_data_imm(u32 instr) {
         LOG_MSG(warning, "Unimplemented\n");
         break;
     }
-    return (iml_instr){0};
 }
 
-iml_instr decode_data_reg(u32 instr) {
+void decode_data_reg(iml_program* prog, u32 instr) {
     LOG_MSG(debug, "Register data instruction 0x%08X\n", instr);
     switch (data_reg_get_group(instr)) {
     case L2_DATA_REG_3_SOURCES:
@@ -189,27 +183,26 @@ iml_instr decode_data_reg(u32 instr) {
         LOG_MSG(debug, "Invalid instruction group.\n");
         break;
     }
-    return (iml_instr){0};
 }
 
-iml_instr decode_load_store(u32 instr) {
+void decode_load_store(iml_program* prog, u32 instr) {
     LOG_MSG(warning, "Unimplemented instruction 0x%08X\n", instr);
-    return (iml_instr){0};
 }
 
-iml_instr decode(u32 instr) {
+s64 decode(iml_program* prog, u32 instr) {
     switch (instr_get_group(instr)) {
     case L1_BRANCH:
-        return decode_branch(instr);
+        // TODO: Return branch destinations
+        decode_branch(prog, instr);
         break;
     case L1_DATA_IMM:
-        return decode_data_imm(instr);
+        decode_data_imm(prog, instr);
         break;
     case L1_DATA_REG:
-        return decode_data_reg(instr);
+        decode_data_reg(prog, instr);
         break;
     case L1_LD_STR:
-        return decode_load_store(instr);
+        decode_load_store(prog, instr);
         break;
     case L1_DATA_SIMD:
         LOG_MSG(warning, "Unimplemented SIMD instruction 0x%08X\n", instr);
@@ -220,6 +213,6 @@ iml_instr decode(u32 instr) {
         break;
     };
 
-    // Something went wrong...
-    return (iml_instr){0};
+    // No branch destination
+    return -1;
 }

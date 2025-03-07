@@ -4,6 +4,6 @@
 #include <common/vfile.h>
 #include "iml.h"
 
-iml_instr decode(u32 instr);
+s64 decode(iml_program* prog, u32 instr);
 
 #endif // #ifndef EMIT_H

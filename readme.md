@@ -12,7 +12,7 @@ My design has a few distinct layers/stages, each dependent on the last. This is
 roughly based on my high-level knowledge of compilers and Cemu's own PowerPC
 recompiler. Here are the rough steps handled by (or planned for) each stage:
 
-### IRGen (Intermediate Representation)
+### IMLGen (InterMediate Language)
   - Convert ARM code to a tree of instructions, attached to their memory/register operands
   - Replace constant branches with references to the target instruction node
 

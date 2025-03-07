@@ -14,7 +14,7 @@
 /// save space, for the moment we'll just do that ahead of time in this stage.
 
 #include <common/int.h>
-#include "pool.h"
+#include <pool.h>
 #include "arm_encoding.h"
 
 typedef enum {
@@ -110,6 +110,9 @@ typedef struct {
     bool touched_zero_flag: 1;
     bool touched_carry_flag: 1;
     bool touched_overflow_flag: 1;
+
+    // Address of next instruction
+    pool_handle next;
 }iml_instr;
 
 // Tree of IML instructions
@@ -117,5 +120,8 @@ typedef struct {
     // We use a pool for the entire tree so it's easily destroyed, and branches
     // can reference their destination in a simple arch-independent way
     pool_t instruction_pool;
+    pool_t arm_pool; // Pool of ARM instructions
     pool_handle entry_point; // The first instruction
 }iml_program;
+
+iml_program imlgen(u8* arm_code, u32 size);

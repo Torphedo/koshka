@@ -6,9 +6,9 @@
 #include <common/logging.h>
 #include <common/file.h>
 
+#include "imlgen/iml.h"
 #include "os/nro.h"
 
-#include "imlgen/decode.h"
 #include "elf.h"
 
 int main(int argc, char** argv) {
@@ -37,10 +37,7 @@ int main(int argc, char** argv) {
 
     // We assume the file just has ARM assembly
     vfile arm_code = vfile_open(arm_buf, size);
-    while (vfile_opcheck(&arm_code, sizeof(u32))) {
-        const u32 arm_instr = VFILE_READ(u32, &arm_code);
-        const iml_instr iml = decode(arm_instr);
-    }
+    const iml_program prog = imlgen(arm_buf, size);
 
     return EXIT_SUCCESS;
 }
