@@ -123,7 +123,7 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
     };
     
     // Add the IML to the pool
-    pool_push(&prog->instruction_pool, &iml, sizeof(iml), sizeof(iml));
+    pool_push(&prog->iml_pool, &iml, sizeof(iml), sizeof(iml));
 }
 
 void decode_data_imm(iml_program* prog, u32 instr) {
@@ -189,7 +189,7 @@ void decode_load_store(iml_program* prog, u32 instr) {
     LOG_MSG(warning, "Unimplemented instruction 0x%08X\n", instr);
 }
 
-s64 decode(iml_program* prog, u32 instr) {
+bdest decode(iml_program* prog, u32 instr) {
     switch (instr_get_group(instr)) {
     case L1_BRANCH:
         // TODO: Return branch destinations
@@ -214,5 +214,5 @@ s64 decode(iml_program* prog, u32 instr) {
     };
 
     // No branch destination
-    return -1;
+    return (bdest){0};
 }

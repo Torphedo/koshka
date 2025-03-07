@@ -17,7 +17,7 @@ recompiler. Here are the rough steps handled by (or planned for) each stage:
   - Replace constant branches with references to the target instruction node
 
 ### Shatter
-  - Split IR into a tree of functions, which we can treat like small
+  - Split IML into a tree of functions, which we can treat like small
     independent programs.
 
 ### RegAlloc
