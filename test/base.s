@@ -1,6 +1,7 @@
 // This isn't a coherent program, it uses all the base ARM instructions to test
 // the decoder.
-main:
+.global _start
+_start:
     adc x1, x2, x3
     adcs x1, x2, x3
 
@@ -12,8 +13,8 @@ main:
     adds x1, x2, #42
     adds x1, x2, x3, lsl 4 // TODO: Figure out syntax for ADDS (shifted register)
 
-    adr x1, main
-    adrp x1, main
+    adr x1, _start
+    adrp x1, _start
 
     and x1, x2, #64
     and x1, x2, x1, lsl 4

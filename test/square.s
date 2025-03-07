@@ -1,5 +1,6 @@
 // Code from Clang @ -O0, via godbolt.org
-square:
+.global _start
+_start:
     sub sp, sp, #0x16 // Stack setup
 
     str r0, [sp, #0x12]

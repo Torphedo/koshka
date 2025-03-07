@@ -16,6 +16,7 @@ koshka
 # Test binaries
 *.nro
 *.nso
+*.elf
 
 # Archives for distribution/upload
 *.zip
