@@ -7,54 +7,49 @@
 /// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.h
 /// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
 ///
-/// For the moment we're trying to split instructions into the simplest
-/// possible operations, so 1 ARM instruction might create multiple IML
-/// instructions (e.g. add immediate with negate would be an immediate add,
-/// then a negate). Some instructions modify an immediate value before use to
-/// save space, for the moment we'll just do that ahead of time in this stage.
+/// We split instructions into a series of simple micro-operations like a real
+/// CPU would. This lets us re-use code to implement specialized instructions.
+/// (e.g. add immediate with negate would be an immediate add, then a negate).
 
 #include <common/int.h>
 #include <common/list.h>
 #include <pool.h>
 #include "arm_encoding.h"
 
+// All potential math operations (non-SIMD)
 typedef enum {
-    DATA_OP_ADD,
-    DATA_OP_SUB,
-    DATA_OP_MUL,
-    DATA_OP_DIV,
+    MATH_OP_ADD,
+    MATH_OP_SUB,
+    MATH_OP_MUL,
+    MATH_OP_DIV,
 
     // Multiply & add/sub
-    DATA_OP_MUL_ADD,
-    DATA_OP_MUL_SUB,
+    MATH_OP_MUL_ADD,
+    MATH_OP_MUL_SUB,
 
     // Logical left/right shift
-    DATA_OP_LSL,
-    DATA_OP_LSR,
+    MATH_OP_LSL,
+    MATH_OP_LSR,
 
     // Arithmetic left/right shift
-    DATA_OP_ASL,
-    DATA_OP_ASR,
+    MATH_OP_ASL,
+    MATH_OP_ASR,
 
     // Rotate left/right
-    DATA_OP_ROL,
-    DATA_OP_ROR,
+    MATH_OP_ROL,
+    MATH_OP_ROR,
 
     // Bitwise operations
-    DATA_OP_AND,
-    DATA_OP_OR,
-    DATA_OP_XOR,
-    DATA_OP_NEG, // Negate
+    MATH_OP_AND,
+    MATH_OP_OR,
+    MATH_OP_XOR,
+    MATH_OP_NEG, // Negate
 
-    // Different variants of moving data between registers
-    DATA_OP_MOVZ,
-    DATA_OP_MOVK,
-    // No need for MOVN, we'll handle that during decoding
+    MATH_OP_BITFIELD_MOV,
+    MATH_OP_BITFIELD_MOV_SIGNED,
+    MATH_OP_BITFIELD_MOV_UNSIGNED,
 
-
-    DATA_OP_BITFIELD_MOV,
-    DATA_OP_BITFIELD_MOV_SIGNED,
-    DATA_OP_BITFIELD_MOV_UNSIGNED,
+    MATH_OP_ENUMMAX,
 }iml_math_op;
 
 typedef enum {
@@ -76,30 +71,26 @@ typedef struct {
     };
 }iml_operand;
 
-// Specialized format for load/store instructions
-typedef struct {
-
-}iml_instr_load_store;
-
 // Specialized format for instructions that operate on simple integer data
 // (single destination, non-SIMD)
 typedef struct {
     // Destinations in this type of instruction are always a register
     u8 dest_register;
     bool set_flags: 1; // Whether to set CPU state flags with operation result
-    // If set, clear the rest of the register to 0 when doing a MOV operation.
-    // Otherwise, leave them alone.
-    bool mov_zero: 1;
     iml_math_op operation;
     iml_operand sources[3]; // Up to 3 operands, could be immediate or register
-}iml_instr_data;
+}iml_instr_math;
+
+// Different variants of instruction
+typedef enum {
+    IML_VARIANT_MATH,
+    IML_VARIANT_LOAD_STORE,
+}iml_variant;
 
 typedef struct {
-    // Different variants of instruction
-    L1_page variant;
+    iml_variant variant;
     union {
-        iml_instr_data data; // Data-processing instructions
-        iml_instr_load_store load_store;
+        iml_instr_math math;
     };
 
     // Instructions can reference just the 32-bit portion of a 64-bit

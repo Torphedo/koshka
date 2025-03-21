@@ -104,25 +104,88 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
 
     const iml_instr iml = {
         .is_64bit = is_64bit,
-        .variant = L1_DATA_IMM,
-        .data = {
+        .variant = IML_VARIANT_MATH,
+        .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
-            .operation = op ? DATA_OP_ADD : DATA_OP_SUB,
-            .sources[0] = {
-                .type = IML_OPERAND_REGISTER,
-                .reg = Rn,
-                .exists = true,
-            },
-            .sources[1] = {
-                .type = IML_OPERAND_IMMEDIATE,
-                .imm = imm,
-                .exists = true,
+            .operation = op ? MATH_OP_ADD : MATH_OP_SUB,
+            .sources = {
+                {
+                    .type = IML_OPERAND_REGISTER,
+                    .reg = Rn,
+                    .exists = true,
+                },
+                {
+                    .type = IML_OPERAND_IMMEDIATE,
+                    .imm = imm,
+                    .exists = true,
+                },
             },
         },
     };
     
     // Add the IML to the pool
+    pool_push(&prog->iml_pool, &iml, sizeof(iml), sizeof(iml));
+}
+
+void decode_logical_imm(iml_program* prog, u32 instr) {
+    // Parse instruction fields
+    const bool is_64bit = GET_SINGLE_BIT(instr, 31);
+    const u8 op = GET_BIT_REGION(instr, 29, 30);
+    const u8 N = GET_SINGLE_BIT(instr, 22);
+    const u32 immr = GET_BIT_REGION(instr, 16, 21);
+    const u32 imms = GET_BIT_REGION(instr, 10, 15);
+    const u8 Rn = GET_BIT_REGION(instr, 5, 9);
+    const u8 Rd = GET_BIT_REGION(instr, 0, 4);
+
+    // TODO: Spec says 32-bit applies when sf == 0 && N == 0. (section C6.2.11)
+    // Does this invalid case happen in reality?
+    if (!is_64bit) {
+        assert(N == 0);
+    }
+
+    // TODO: Figure out how this is decoded
+    const u32 imm_val = 0;
+
+    // We just use the operation value as a lookup table index
+    const iml_math_op optable[] = {
+        MATH_OP_AND,
+        MATH_OP_OR,
+        MATH_OP_XOR,
+        MATH_OP_AND, // Same AND, but sets flags.
+    };
+    const iml_math_op operation = optable[op];
+    const bool set_flags = (op == 0b11); // Special case
+
+    const iml_instr iml = {
+        .is_64bit = is_64bit,
+        .variant = IML_VARIANT_MATH,
+        .touched_zero_flag = set_flags,
+        // TODO: I'm not sure of the psuedocode syntax in the spec, so not sure
+        // about this flag. This should be double-checked.
+        .touched_negative_flag = set_flags,
+        // These are just set to 0
+        .touched_carry_flag = set_flags,
+        .touched_overflow_flag = set_flags,
+        .math = {
+            .dest_register = Rn,
+            .set_flags = set_flags,
+            .operation = operation,
+            .sources = {
+                {
+                    .type = IML_OPERAND_REGISTER,
+                    .exists = true,
+                    .reg = Rn,
+                },
+                {
+                    .type = IML_OPERAND_IMMEDIATE,
+                    .exists = true,
+                    .imm = imm_val,
+                },
+            },
+        },
+    };
+
     pool_push(&prog->iml_pool, &iml, sizeof(iml), sizeof(iml));
 }
 
@@ -135,11 +198,13 @@ void decode_data_imm(iml_program* prog, u32 instr) {
     case L2_DATA_IMM_ADDSUB_IMM:
         decode_addsub_imm(prog, instr);
         break;
-    case L2_DATA_IMM_UNALLOCATED:
     case L2_DATA_IMM_PC_REL_ADDR:
     case L2_DATA_IMM_LOGICAL_IMM:
+        decode_logical_imm(prog, instr);
+        break;
     case L2_DATA_IMM_BITFIELD:
     case L2_DATA_IMM_EXTRACT:
+    case L2_DATA_IMM_UNALLOCATED:
     default:
         LOG_MSG(warning, "Unimplemented\n");
         break;
