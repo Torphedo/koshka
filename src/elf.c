@@ -54,19 +54,13 @@ u8* load_elf(const char* path, s64* size_out) {
 
         fread(&prog_header, sizeof(prog_header), 1, f);
         const s64 size = prog_header.sh_size;
-        if (prog_header.sh_type != SHT_PROGBITS) {
-            continue;
-        }
+        const bool is_executable = HAS_BIT_FLAG(prog_header.sh_flags, SHF_EXECINSTR);
+        const bool is_code = prog_header.sh_type == SHT_PROGBITS;
+        const bool too_small = (size < 4);
 
-        if (!HAS_BIT_FLAG(prog_header.sh_flags, SHF_EXECINSTR)) {
-            continue;
+        if (!is_code || !is_executable || too_small) {
+            continue; // Section doesn't matter to us
         }
-
-        if (size < 4) {
-            LOG_MSG(warning, "Skipping section %u, (too small to have code)!\n", i);
-            continue;
-        }
-
 
         // Jump to section
         fseek(f, prog_header.sh_offset, SEEK_SET);
