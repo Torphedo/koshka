@@ -20,7 +20,7 @@
 namespace iml {
 
 // All potential math operations (non-SIMD)
-typedef enum {
+enum math_op : u8 {
     MATH_OP_ADD,
     MATH_OP_SUB,
     MATH_OP_MUL,
@@ -53,7 +53,7 @@ typedef enum {
     MATH_OP_BITFIELD_MOV_UNSIGNED,
 
     MATH_OP_ENUMMAX,
-}math_op;
+};
 
 static const math_op shift_type_table[] = {
     MATH_OP_LSL,
@@ -62,10 +62,10 @@ static const math_op shift_type_table[] = {
     MATH_OP_ROR,
 };
 
-typedef enum {
+enum operand_type : u8 {
     IML_OPERAND_IMMEDIATE,
     IML_OPERAND_REGISTER,
-}operand_type;
+};
 
 // Many instructions will operate on a register value before using it in
 // another operation, but don't mutate the register itself.
@@ -75,7 +75,7 @@ typedef enum {
 // To handle this, we build an expression tree.
 
 // A single operand to an expression
-typedef struct {
+struct operand {
     // Operand can be either a register or immediate value
     operand_type type: 2;
     union {
@@ -85,17 +85,17 @@ typedef struct {
         // space on the IML tree
         u64 imm;
     };
-}operand;
+};
 
 // Essentially a typed pool handle to an iml_expression.
 typedef pool_handle expression_handle;
 
 // Recursive expression tree type.
-typedef struct expression_s {
+struct expression {
     // Union tag for the expression. Indicates if you should interpret it as a
     // final value (a register or immediate) or another layer of expression.
     bool is_value;
-    union {
+    const union {
         struct {
             math_op op;
 
@@ -105,7 +105,21 @@ typedef struct expression_s {
         }expr;
         operand value;
     };
-}expression;
+
+    // Initialize expression with a final value
+    expression(operand value) {
+        this->is_value = true;
+        this->value = value;
+    }
+
+    expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right) {
+        this->expr = {
+            .op = op,
+            .left  = pool_push(iml_pool, &left, sizeof(left), 0),
+            .right = pool_push(iml_pool, &right, sizeof(right), 0),
+        };
+    }
+};
 
 // Specialized format for instructions that operate on simple integer data
 // (single destination, non-SIMD)

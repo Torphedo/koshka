@@ -106,33 +106,16 @@ void decode_addsub_imm(program* prog, u32 instr) {
         imm <<= 12;
     }
 
-    const expression expr_reg = {
-        .value = {
-            .type = IML_OPERAND_REGISTER,
-            .reg = Rn,
-        },
-    };
+    const expression expr_reg = expression({IML_OPERAND_REGISTER, Rn});
+    const expression expr_imm = expression({.type = IML_OPERAND_IMMEDIATE, .imm = imm});
 
-    const expression expr_imm = {
-        .is_value = true,
-        .value = {
-            .type = IML_OPERAND_IMMEDIATE,
-            .imm = imm,
-        },
-    };
-
+    const math_op operation = op ? MATH_OP_ADD : MATH_OP_SUB;
     const instruction iml = {
         .var = IML_VARIANT_MATH,
         .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
-            .expr = {
-                .expr = {
-                    .op = op ? MATH_OP_ADD : MATH_OP_SUB,
-                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), 0),
-                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), 0),
-                },
-            },
+            .expr = expression(&prog->iml_pool, expr_reg, operation, expr_imm),
         },
         .is_64bit = is_64bit,
     };
@@ -169,34 +152,16 @@ void decode_logical_imm(program* prog, u32 instr) {
     const math_op operation = optable[op];
     const bool set_flags = (op == 0b11); // Special case
 
-    const expression expr_reg = {
-        .is_value = true,
-        .value = {
-            .type = IML_OPERAND_REGISTER,
-            .reg = Rn,
-        },
-    };
+    const expression expr_reg = expression({IML_OPERAND_REGISTER, Rn});
 
-    const expression expr_imm = {
-        .is_value = true,
-        .value = {
-            .type = IML_OPERAND_IMMEDIATE,
-            .imm = imm_val,
-        },
-    };
+    const expression expr_imm = expression({.type = IML_OPERAND_IMMEDIATE, .imm = imm_val});
 
     const instruction iml = {
         .var = IML_VARIANT_MATH,
         .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
-            .expr = {
-                .expr = {
-                    .op = operation,
-                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), 0),
-                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), 0),
-                }
-            },
+            .expr = expression(&prog->iml_pool, expr_reg, operation, expr_imm),
         },
         .is_64bit = is_64bit,
         .touched_negative_flag = set_flags,
