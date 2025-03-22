@@ -1,4 +1,5 @@
 #pragma once
+
 /// Less architecture-dependent representation of ARM code
 /// (aka intermediate language)
 ///
@@ -15,6 +16,8 @@
 #include <common/list.h>
 #include <pool.h>
 #include "arm_encoding.h"
+
+namespace iml {
 
 // All potential math operations (non-SIMD)
 typedef enum {
@@ -50,9 +53,9 @@ typedef enum {
     MATH_OP_BITFIELD_MOV_UNSIGNED,
 
     MATH_OP_ENUMMAX,
-}iml_math_op;
+}math_op;
 
-static const iml_math_op shift_type_table[] = {
+static const math_op shift_type_table[] = {
     MATH_OP_LSL,
     MATH_OP_LSR,
     MATH_OP_ASR,
@@ -62,7 +65,7 @@ static const iml_math_op shift_type_table[] = {
 typedef enum {
     IML_OPERAND_IMMEDIATE,
     IML_OPERAND_REGISTER,
-}iml_operand_type;
+}operand_type;
 
 // Many instructions will operate on a register value before using it in
 // another operation, but don't mutate the register itself.
@@ -74,7 +77,7 @@ typedef enum {
 // A single operand to an expression
 typedef struct {
     // Operand can be either a register or immediate value
-    iml_operand_type type: 2;
+    operand_type type: 2;
     union {
         u8 reg; // Register ID
         // The immediate can be as large as a 64-bit bitmask
@@ -82,27 +85,27 @@ typedef struct {
         // space on the IML tree
         u64 imm;
     };
-}iml_operand;
+}operand;
 
 // Essentially a typed pool handle to an iml_expression.
-typedef pool_handle iml_expression_handle;
+typedef pool_handle expression_handle;
 
 // Recursive expression tree type.
-typedef struct iml_expression_s {
+typedef struct expression_s {
     // Union tag for the expression. Indicates if you should interpret it as a
     // final value (a register or immediate) or another layer of expression.
     bool is_value;
     union {
         struct {
-            iml_math_op op;
+            math_op op;
 
             // The left and right sub-expressions
-            iml_expression_handle left;
-            iml_expression_handle right;
+            expression_handle left;
+            expression_handle right;
         }expr;
-        iml_operand value;
+        operand value;
     };
-}iml_expression;
+}expression;
 
 // Specialized format for instructions that operate on simple integer data
 // (single destination, non-SIMD)
@@ -110,19 +113,19 @@ typedef struct {
     // Destinations in this type of instruction are always a register
     u8 dest_register;
     bool set_flags; // Whether to set CPU state flags with operation result
-    iml_expression expression;
-}iml_instr_math;
+    expression expr;
+}instr_math;
 
 // Different variants of instruction
 typedef enum {
     IML_VARIANT_MATH,
     IML_VARIANT_LOAD_STORE,
-}iml_variant;
+}variant;
 
 typedef struct {
-    iml_variant variant;
+    variant var;
     union {
-        iml_instr_math math;
+        instr_math math;
     };
 
     // Instructions can reference just the 32-bit portion of a 64-bit
@@ -137,7 +140,7 @@ typedef struct {
 
     // Address of next instruction
     pool_handle next;
-}iml_instr;
+}instruction;
 
 // Poor man's std::optional<u32>. Used for a branch destination address.
 typedef struct {
@@ -154,6 +157,8 @@ typedef struct {
     pool_handle entry_point; // The first instruction
     // All known branch destinations that have already been decoded
     list branch_dests;
-}iml_program;
+}program;
 
-iml_program imlgen(u8* arm_code, u32 size);
+program imlgen(u8* arm_code, u32 size);
+
+} // namespace iml

@@ -1,5 +1,8 @@
-#ifndef A64_ENC_H
-#define A64_ENC_H
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Helper functions & enums for decoding ARMv8 instructions.
  * We basically turn the ARM encoding into enums that can be switched over.
  *
@@ -108,4 +111,6 @@ typedef enum {
 }L2_data_reg_page;
 L2_data_reg_page data_reg_get_group(u32 instr);
 
-#endif // #ifndef A64_ENC_H
+#ifdef __cplusplus
+}
+#endif

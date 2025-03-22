@@ -1,5 +1,7 @@
-#ifndef MODULE_H
-#define MODULE_H
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <common/int.h>
 
@@ -22,5 +24,7 @@ typedef struct {
     u32 mod_obj_offset; // ??? (apparently usually == bss base)?
 }mod0;
 
-#endif // #ifndef MODULE_H
 
+#ifdef __cplusplus
+}
+#endif

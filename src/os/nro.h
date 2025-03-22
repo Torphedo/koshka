@@ -1,5 +1,7 @@
-#ifndef NRO_H
-#define NRO_H
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <common/int.h>
 #include "module.h"
@@ -54,5 +56,6 @@ typedef struct {
 
 module nro_load(const char* path);
 
-#endif // #ifndef NRO_H
-
+#ifdef __cplusplus
+}
+#endif

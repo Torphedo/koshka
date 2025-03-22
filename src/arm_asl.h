@@ -1,4 +1,8 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // This file has implementations for many of the ASL (Architecture
 // Specification Language) pseudocode functions used throughout the spec.
 
@@ -14,3 +18,7 @@
 /// @param immr The number of right rotations to apply
 /// @param immediate From spec, unused.
 u64 DecodeBitMasks(bool immN, u8 imms, u8 immr, bool immediate);
+
+#ifdef __cplusplus
+}
+#endif

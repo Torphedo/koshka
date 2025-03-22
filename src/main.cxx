@@ -6,7 +6,7 @@
 #include <common/logging.h>
 #include <common/file.h>
 
-#include "imlgen/iml.h"
+#include "imlgen/iml.hxx"
 #include "os/nro.h"
 
 #include "elf.h"
@@ -44,7 +44,7 @@ int main(int argc, char** argv) {
 
     vfile arm_code = vfile_open(arm_buf, size);
     LOG_MSG(debug, "Generating IML for %d ARM instructions\n", size / 4);
-    const iml_program prog = imlgen(arm_buf, size);
+    const iml::program prog = iml::imlgen(arm_buf, size);
     // TODO: Do shatter here
     // TODO: Do register allocation here
 

@@ -1,4 +1,8 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <assert.h>
 #include <common/int.h>
 
@@ -25,3 +29,7 @@ static_assert(GET_SINGLE_BIT((u32)0, 5) == 0, "Broken bit extraction!");
 static_assert(GET_SINGLE_BIT((u32)0b1010110, 1) == 1, "Broken bit extraction!");
 static_assert(GET_BIT_REGION((u8)0b0010100, 2, 4) == 0b101, "Broken bit masking!");
 static_assert(GET_BIT_REGION((u32)0xD2800020, 29, 30) == 0b10, "Broken bit masking!");
+
+#ifdef __cplusplus
+}
+#endif

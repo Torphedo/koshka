@@ -1,14 +1,16 @@
-#include "iml.h"
-#include "common/list.h"
-#include "decode.h"
+#include "iml.hxx"
+#include "decode.hxx"
+#include <common/list.h>
 #include <pool.h>
 
 #include <assert.h>
 #include <stdbool.h>
 
-void imlgen_recurse(iml_program* prog, pool_handle pos) {
+namespace iml {
+
+void imlgen_recurse(program* prog, pool_handle pos) {
     assert(prog != NULL);
-    const u32* arm_instr = pool_getdata(prog->arm_pool, pos);
+    const u32* arm_instr = (u32*)pool_getdata(prog->arm_pool, pos);
     // Decoding function returns branch destinations if they exist
     const bdest branch = decode(prog, *arm_instr);
 
@@ -28,11 +30,11 @@ void imlgen_recurse(iml_program* prog, pool_handle pos) {
     }
 }
 
-iml_program imlgen(u8* arm_code, u32 size) {
+program imlgen(u8* arm_code, u32 size) {
     assert(arm_code != NULL);
     assert(size > 0);
-    iml_program out = {
-        .iml_pool = pool_open(50 * sizeof(iml_instr)),
+    program out = {
+        .iml_pool = pool_open(50 * sizeof(instruction)),
         .arm_pool = {
             .data = (uintptr_t)arm_code,
             .alloc_size = size,
@@ -44,3 +46,5 @@ iml_program imlgen(u8* arm_code, u32 size) {
 
     return out;
 }
+
+} // namespace iml

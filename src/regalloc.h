@@ -1,4 +1,7 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <common/int.h>
 
@@ -32,3 +35,7 @@ s8 reg_alloc(u8 arm_reg_id);
 
 // Reset all stored register mappings to 0.
 void reg_reset();
+
+#ifdef __cplusplus
+}
+#endif

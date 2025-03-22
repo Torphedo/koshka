@@ -1,5 +1,7 @@
-#ifndef VMEM_H
-#define VMEM_H
+#pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 /* vmem.h: Helper functions for handling the emulated "userspace". */
 #include <common/int.h>
@@ -16,5 +18,6 @@ void* vmem_map(u64 size, vmem_permission perm);
 void vmem_free(void* ptr);
 void vmem_unmap(void* ptr, u64 size);
 
-#endif // #ifndef VMEM_H
-
+#ifdef __cplusplus
+}
+#endif

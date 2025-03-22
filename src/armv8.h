@@ -1,4 +1,7 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #include <common/int.h>
 
@@ -76,3 +79,7 @@ typedef struct {
     u64 fpcr[2];
     u64 fpsr[2];
 }cpu_ctx;
+
+#ifdef __cplusplus
+}
+#endif

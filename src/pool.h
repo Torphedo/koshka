@@ -1,4 +1,8 @@
 #pragma once
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdbool.h>
 #include <common/int.h>
 
@@ -80,3 +84,7 @@ bool pool_empty(pool_t pool);
 
 /// @brief Whether the pool has space to store data of some size
 bool pool_can_hold(pool_t pool, pool_size_t size);
+
+#ifdef __cplusplus
+}
+#endif

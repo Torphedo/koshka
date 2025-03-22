@@ -1,5 +1,5 @@
 // Page numbers in this file reference the same ISA manual as the rest of the code
-#include "decode.h"
+#include "decode.hxx"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -12,12 +12,14 @@
 #include <common/queue.h>
 
 #include <pool.h>
-#include "arm_encoding.h"
-#include "iml.h"
 #include <bitmanip.h>
 #include <arm_asl.h>
+#include "arm_encoding.h"
+#include "iml.hxx"
 
-void decode_branch(iml_program* prog, u32 instr) {
+namespace iml {
+
+void decode_branch(program* prog, u32 instr) {
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
     // See C4.3, pg. C4-197 for the table defining all these values & cases.
     const u8 op0 = GET_BIT_REGION(instr, 29, 31);
@@ -42,7 +44,7 @@ void decode_branch(iml_program* prog, u32 instr) {
         break;
     }
     switch (op0 & 0b011) {
-    case 0b000:
+    case 0b000: {
         LOG_MSG(debug, "Unconditional branch (imm)\n");
         bool call = op0 & 0b100; // Top bit indicates if it's a subroutine call
         // Least significant 26 bits * 4. See C6.6.20, pg. C6-463
@@ -53,6 +55,8 @@ void decode_branch(iml_program* prog, u32 instr) {
             printf("l");
         }
         printf(" #%d\n", dest);
+        break;
+    }
 
     case 0b001:
         if ((op1 & 0b1000) == 0) {
@@ -65,7 +69,7 @@ void decode_branch(iml_program* prog, u32 instr) {
     }
 }
 
-void decode_movw(iml_program* prog, u32 instr) {
+void decode_movw(program* prog, u32 instr) {
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 opc = GET_BIT_REGION(instr, 29, 30);
     const u8 register_num = GET_BIT_REGION(instr, 0, 4);
@@ -76,7 +80,6 @@ void decode_movw(iml_program* prog, u32 instr) {
             break;
         case 0b10:
             LOG_MSG(debug, "MOVZ\n");
-            const u64 imm = (instr & (0xFFFF << 5)) >> 5;
             break;
         case 0b11:
             LOG_MSG(debug, "MOVK\n");
@@ -88,7 +91,7 @@ void decode_movw(iml_program* prog, u32 instr) {
     }
 }
 
-void decode_addsub_imm(iml_program* prog, u32 instr) {
+void decode_addsub_imm(program* prog, u32 instr) {
     // These names match the spec on pg. C4-193, except "sf" and "S" which are renamed
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 op = GET_SINGLE_BIT(instr, 30);
@@ -103,14 +106,14 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
         imm <<= 12;
     }
 
-    const iml_expression expr_reg = {
+    const expression expr_reg = {
         .value = {
             .type = IML_OPERAND_REGISTER,
             .reg = Rn,
         },
     };
 
-    const iml_expression expr_imm = {
+    const expression expr_imm = {
         .is_value = true,
         .value = {
             .type = IML_OPERAND_IMMEDIATE,
@@ -118,13 +121,12 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
         },
     };
 
-    const iml_instr iml = {
-        .is_64bit = is_64bit,
-        .variant = IML_VARIANT_MATH,
+    const instruction iml = {
+        .var = IML_VARIANT_MATH,
         .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
-            .expression = {
+            .expr = {
                 .expr = {
                     .op = op ? MATH_OP_ADD : MATH_OP_SUB,
                     .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), 0),
@@ -132,13 +134,14 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
                 },
             },
         },
+        .is_64bit = is_64bit,
     };
 
     // Add the IML to the pool
     pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
 }
 
-void decode_logical_imm(iml_program* prog, u32 instr) {
+void decode_logical_imm(program* prog, u32 instr) {
     // Parse instruction fields
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 op = GET_BIT_REGION(instr, 29, 30);
@@ -157,16 +160,16 @@ void decode_logical_imm(iml_program* prog, u32 instr) {
     const u32 imm_val = DecodeBitMasks(N, imms, immr, true);
 
     // We just use the operation value as a lookup table index
-    const iml_math_op optable[] = {
+    const math_op optable[] = {
         MATH_OP_AND,
         MATH_OP_OR,
         MATH_OP_XOR,
         MATH_OP_AND, // Same AND, but sets flags.
     };
-    const iml_math_op operation = optable[op];
+    const math_op operation = optable[op];
     const bool set_flags = (op == 0b11); // Special case
 
-    const iml_expression expr_reg = {
+    const expression expr_reg = {
         .is_value = true,
         .value = {
             .type = IML_OPERAND_REGISTER,
@@ -174,7 +177,7 @@ void decode_logical_imm(iml_program* prog, u32 instr) {
         },
     };
 
-    const iml_expression expr_imm = {
+    const expression expr_imm = {
         .is_value = true,
         .value = {
             .type = IML_OPERAND_IMMEDIATE,
@@ -182,33 +185,33 @@ void decode_logical_imm(iml_program* prog, u32 instr) {
         },
     };
 
-    const iml_instr iml = {
-        .is_64bit = is_64bit,
-        .variant = IML_VARIANT_MATH,
-        .touched_zero_flag = set_flags,
-        // TODO: I'm not sure of the psuedocode syntax in the spec, so not sure
-        // about this flag. This should be double-checked.
-        .touched_negative_flag = set_flags,
-        // These are just set to 0
-        .touched_carry_flag = set_flags,
-        .touched_overflow_flag = set_flags,
+    const instruction iml = {
+        .var = IML_VARIANT_MATH,
         .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
-            .expression = (iml_expression){
+            .expr = {
                 .expr = {
-                    .op = op,
+                    .op = operation,
                     .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), 0),
                     .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), 0),
                 }
             },
         },
+        .is_64bit = is_64bit,
+        .touched_negative_flag = set_flags,
+        .touched_zero_flag = set_flags,
+        // TODO: I'm not sure of the psuedocode syntax in the spec, so not sure
+        // about this flag. This should be double-checked.
+        // These are just set to 0
+        .touched_carry_flag = set_flags,
+        .touched_overflow_flag = set_flags,
     };
 
     pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
 }
 
-void decode_data_imm(iml_program* prog, u32 instr) {
+void decode_data_imm(program* prog, u32 instr) {
     LOG_MSG(debug, "Immediate instruction 0x%08X\n", instr);
     switch (data_imm_get_group(instr)) {
     case L2_DATA_IMM_MOV_WIDE:
@@ -232,7 +235,7 @@ void decode_data_imm(iml_program* prog, u32 instr) {
     }
 }
 
-void decode_data_reg(iml_program* prog, u32 instr) {
+void decode_data_reg(program* prog, u32 instr) {
     LOG_MSG(debug, "Register data instruction 0x%08X\n", instr);
     switch (data_reg_get_group(instr)) {
     case L2_DATA_REG_3_SOURCES:
@@ -271,11 +274,11 @@ void decode_data_reg(iml_program* prog, u32 instr) {
     }
 }
 
-void decode_load_store(iml_program* prog, u32 instr) {
+void decode_load_store(program* prog, u32 instr) {
     LOG_MSG(warning, "Unimplemented instruction 0x%08X\n", instr);
 }
 
-bdest decode(iml_program* prog, u32 instr) {
+bdest decode(program* prog, u32 instr) {
     assert(prog != NULL);
     assert(instr != 0);
     switch (instr_get_group(instr)) {
@@ -304,3 +307,5 @@ bdest decode(iml_program* prog, u32 instr) {
     // No branch destination
     return (bdest){0};
 }
+
+} // namespace iml
