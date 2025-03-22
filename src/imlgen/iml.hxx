@@ -62,9 +62,16 @@ static const math_op shift_type_table[] = {
     MATH_OP_ROR,
 };
 
+static const math_op bitwise_op_table[] = {
+    MATH_OP_AND,
+    MATH_OP_OR,
+    MATH_OP_XOR,
+    MATH_OP_AND,
+};
+
 enum operand_type : u8 {
-    IML_OPERAND_IMMEDIATE,
-    IML_OPERAND_REGISTER,
+    OPERAND_IMMEDIATE,
+    OPERAND_REGISTER,
 };
 
 // Many instructions will operate on a register value before using it in
@@ -106,10 +113,17 @@ struct expression {
         operand value;
     };
 
+    expression() = default;
+
     // Initialize expression with a final value
-    expression(operand value) {
+    expression(operand_type type, u64 val) {
         this->is_value = true;
-        this->value = value;
+        this->value.type = type;
+        if (type == OPERAND_REGISTER) {
+            this->value.reg = val;
+        } else {
+            this->value.imm = val;
+        }
     }
 
     expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right) {
@@ -132,8 +146,8 @@ typedef struct {
 
 // Different variants of instruction
 typedef enum {
-    IML_VARIANT_MATH,
-    IML_VARIANT_LOAD_STORE,
+    VARIANT_MATH,
+    VARIANT_LOAD_STORE,
 }variant;
 
 typedef struct {

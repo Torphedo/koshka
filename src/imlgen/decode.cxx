@@ -101,17 +101,18 @@ void decode_addsub_imm(program* prog, u32 instr) {
     const u8 Rn = GET_BIT_REGION(instr, 5, 9);
     const u8 Rd = GET_BIT_REGION(instr, 0, 4);
 
-    // Immediate can be optionally shifted
+    const expression expr_reg = expression(OPERAND_REGISTER, Rn);
+    expression expr_imm = expression(OPERAND_IMMEDIATE, imm);
+    // Immediate can be optionally left-shifted by 12 bits
     if (shift == 0b01) {
-        imm <<= 12;
+        // Insert a left-shift expression in place of the constant immediate
+        const expression expr_shift = expression( OPERAND_IMMEDIATE, 12);
+        expr_imm = expression(&prog->iml_pool, expr_imm, MATH_OP_LSL, expr_shift);
     }
-
-    const expression expr_reg = expression({IML_OPERAND_REGISTER, Rn});
-    const expression expr_imm = expression({.type = IML_OPERAND_IMMEDIATE, .imm = imm});
 
     const math_op operation = op ? MATH_OP_ADD : MATH_OP_SUB;
     const instruction iml = {
-        .var = IML_VARIANT_MATH,
+        .var = VARIANT_MATH,
         .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
@@ -143,21 +144,14 @@ void decode_logical_imm(program* prog, u32 instr) {
     const u32 imm_val = DecodeBitMasks(N, imms, immr, true);
 
     // We just use the operation value as a lookup table index
-    const math_op optable[] = {
-        MATH_OP_AND,
-        MATH_OP_OR,
-        MATH_OP_XOR,
-        MATH_OP_AND, // Same AND, but sets flags.
-    };
-    const math_op operation = optable[op];
+    const math_op operation = bitwise_op_table[op];
     const bool set_flags = (op == 0b11); // Special case
 
-    const expression expr_reg = expression({IML_OPERAND_REGISTER, Rn});
-
-    const expression expr_imm = expression({.type = IML_OPERAND_IMMEDIATE, .imm = imm_val});
+    const expression expr_reg = expression(OPERAND_REGISTER, Rn);
+    const expression expr_imm = expression(OPERAND_IMMEDIATE, imm_val);
 
     const instruction iml = {
-        .var = IML_VARIANT_MATH,
+        .var = VARIANT_MATH,
         .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
@@ -198,6 +192,51 @@ void decode_data_imm(program* prog, u32 instr) {
         LOG_MSG(warning, "Unallocated/invalid instruction.\n");
         break;
     }
+}
+
+void decode_data_reg_logical_shift(program* prog, u32 instr) {
+    // Parse instruction fields
+    const u8 Rd        = GET_BIT_REGION(instr,  0,  4); // Destination
+    const u8 Rn        = GET_BIT_REGION(instr,  5,  9); // A source register
+    const u8 shift_len = GET_BIT_REGION(instr, 10, 15); // Optional shift amount
+    const u8 Rm        = GET_BIT_REGION(instr, 16, 20); // A source register
+    const bool negate  = GET_SINGLE_BIT(instr, 21);     // Optionally negate 2nd source reg
+
+    // These values indicate shift and bitwise op types in a lookup table.
+    const math_op shift_type = shift_type_table[GET_BIT_REGION(instr, 22, 23)];
+    const math_op bitwise_op = bitwise_op_table[GET_BIT_REGION(instr, 29, 30)];
+    const bool is_64bit = GET_SINGLE_BIT(instr, 31);
+    const bool set_flags = GET_BIT_REGION(instr, 29, 30) == 0b11;
+
+    if (!is_64bit) {
+        assert(!GET_SINGLE_BIT(shift_len, 5) && "Spec requires top immediate bit to be 0 in the 32-bit encoding!\n");
+    }
+
+    const expression expr_Rn = expression(OPERAND_REGISTER, Rn);
+    expression expr_Rm = expression(OPERAND_REGISTER, Rm);
+    if (shift_len > 0) {
+        // Wrap the register value in a shift expression
+        expr_Rm = expression(&prog->iml_pool, expr_Rm, shift_type, expression(OPERAND_IMMEDIATE, shift_len));
+    }
+    if (negate) {
+        // Wrap the current expression in a negation
+        // Negation is unary, so the right side is empty
+        expr_Rm = expression(&prog->iml_pool, expr_Rm, MATH_OP_NEG, expression());
+    }
+
+    const instruction iml = {
+        .var = VARIANT_MATH,
+        .math = {
+            .dest_register = Rd,
+            .set_flags = set_flags,
+            .expr = expression(&prog->iml_pool, expr_Rn, bitwise_op, expr_Rm),
+        },
+        .is_64bit = is_64bit,
+        .touched_negative_flag = set_flags,
+        .touched_zero_flag = set_flags,
+        .touched_carry_flag = set_flags,
+        .touched_overflow_flag = set_flags,
+    };
 }
 
 void decode_data_reg(program* prog, u32 instr) {
