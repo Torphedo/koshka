@@ -32,6 +32,9 @@ void pool_close(pool_t* pool) {
 // TODO: Use a list for our backing buffer so we can re-use that code?
 // Or merge this into bobtail and use it as the basis for the list?
 pool_handle pool_push(pool_t* pool, const void* data, pool_size_t data_size, pool_size_t alloc_size) {
+    if (alloc_size == 0) {
+        alloc_size = data_size;
+    }
     // If there's no room, we need to realloc
     if (!pool_can_hold(*pool, alloc_size)) {
         // The buffer is completely full & needs a new allocation. Grow by 50%.

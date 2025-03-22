@@ -127,15 +127,15 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
             .expression = {
                 .expr = {
                     .op = op ? MATH_OP_ADD : MATH_OP_SUB,
-                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), sizeof(expr_reg)),
-                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), sizeof(expr_imm)),
+                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), 0),
+                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), 0),
                 },
             },
         },
     };
 
     // Add the IML to the pool
-    pool_push(&prog->iml_pool, &iml, sizeof(iml), sizeof(iml));
+    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
 }
 
 void decode_logical_imm(iml_program* prog, u32 instr) {
@@ -198,14 +198,14 @@ void decode_logical_imm(iml_program* prog, u32 instr) {
             .expression = (iml_expression){
                 .expr = {
                     .op = op,
-                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), sizeof(expr_reg)),
-                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), sizeof(expr_imm)),
+                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), 0),
+                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), 0),
                 }
             },
         },
     };
 
-    pool_push(&prog->iml_pool, &iml, sizeof(iml), sizeof(iml));
+    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
 }
 
 void decode_data_imm(iml_program* prog, u32 instr) {

@@ -51,8 +51,8 @@ void pool_close(pool_t* pool);
 /// @param pool The pool to modify
 /// @param data The data to store. Must be at least [data_size] bytes
 /// @param data_size The number of bytes to be copied from [data]
-/// @param alloc_size The number of bytes to allocate in the pool. Usually same
-/// as @ref data_size, but you might want to reserve extra space for arrays.
+/// @param alloc_size The number of bytes to allocate in the pool. Defaults to
+/// @ref data_size if 0.
 ///
 /// @return A stable opaque handle to the data now stored in the pool (or
 /// POOL_INVALID_HANDLE on error). This is like a pointer, but still valid when
