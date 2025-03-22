@@ -12,10 +12,10 @@
 /// CPU would. This lets us re-use code to implement specialized instructions.
 /// (e.g. add immediate with negate would be an immediate add, then a negate).
 
+#include "bitmanip.h"
 #include <common/int.h>
 #include <common/list.h>
 #include <pool.h>
-#include "arm_encoding.h"
 
 namespace iml {
 
@@ -25,10 +25,6 @@ enum math_op : u8 {
     MATH_OP_SUB,
     MATH_OP_MUL,
     MATH_OP_DIV,
-
-    // Multiply & add/sub
-    MATH_OP_MUL_ADD,
-    MATH_OP_MUL_SUB,
 
     // Logical left/right shift
     MATH_OP_LSL,
@@ -105,6 +101,8 @@ struct expression {
     const union {
         struct {
             math_op op;
+            bool signed_op; // "signed" on its own is a reserved keyword
+            bool carry;
 
             // The left and right sub-expressions
             expression_handle left;
@@ -116,19 +114,31 @@ struct expression {
     expression() = default;
 
     // Initialize expression with a final value
-    expression(operand_type type, u64 val) {
+    expression(operand_type type, u64 val, bool force_register = false) {
         this->is_value = true;
         this->value.type = type;
-        if (type == OPERAND_REGISTER) {
-            this->value.reg = val;
-        } else {
+        switch (type) {
+        case OPERAND_REGISTER:
+            if (val == MAX_VAL_FOR_SIZE(5) && !force_register) {
+                // This special value means the zero register, so replace it
+                // with an immediate 0. The caller can override this (e.g. if
+                // in their context it means the stack pointer instead).
+                this->value.type = OPERAND_IMMEDIATE;
+                this->value.imm = 0;
+            } else {
+                this->value.reg = val;
+            }
+            break;
+        case OPERAND_IMMEDIATE:
             this->value.imm = val;
+            break;
         }
     }
 
-    expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right) {
+    expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right, bool carry = false) {
         this->expr = {
             .op = op,
+            .carry = carry,
             .left  = pool_push(iml_pool, &left, sizeof(left), 0),
             .right = pool_push(iml_pool, &right, sizeof(right), 0),
         };

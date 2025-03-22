@@ -209,7 +209,7 @@ void decode_data_reg_logical_shift(program* prog, u32 instr) {
     const bool set_flags = GET_BIT_REGION(instr, 29, 30) == 0b11;
 
     if (!is_64bit) {
-        assert(!GET_SINGLE_BIT(shift_len, 5) && "Spec requires top immediate bit to be 0 in the 32-bit encoding!\n");
+        assert(!GET_SINGLE_BIT(shift_len, 5) && "Can't shift a 32-bit register > 32 bits!\n");
     }
 
     const expression expr_Rn = expression(OPERAND_REGISTER, Rn);
@@ -237,6 +237,49 @@ void decode_data_reg_logical_shift(program* prog, u32 instr) {
         .touched_carry_flag = set_flags,
         .touched_overflow_flag = set_flags,
     };
+
+    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
+}
+
+void decode_data_reg_addsub_shift(program* prog, u32 instr) {
+    // TODO: This shares a lot of decoding with bitwise ops, can we merge them?
+    const u8 Rd        = GET_BIT_REGION(instr,  0,  4); // Destination
+    const u8 Rn        = GET_BIT_REGION(instr,  5,  9); // A source register
+    const u8 shift_len = GET_BIT_REGION(instr, 10, 15); // Optional shift amount
+    const u8 Rm        = GET_BIT_REGION(instr, 16, 20); // A source register
+
+    const math_op shift_type = shift_type_table[GET_BIT_REGION(instr, 22, 23)];
+    const bool set_flags = GET_SINGLE_BIT(instr, 29);
+    const bool op        = GET_SINGLE_BIT(instr, 30); // true = add, false = subtract
+    const bool is_64bit  = GET_SINGLE_BIT(instr, 31);
+    assert(shift_type != 0b11 && "Invalid shift type!");
+    if (!is_64bit) {
+        assert(!GET_SINGLE_BIT(shift_len, 5) && "Can't shift a 32-bit register > 32 bits!\n");
+    }
+
+    // TODO: This is nearly identical IML building to bitwise ops, can we merge them?
+    const expression expr_Rn = expression(OPERAND_REGISTER, Rn);
+    expression expr_Rm = expression(OPERAND_REGISTER, Rm);
+    if (shift_len > 0) {
+        // Wrap the register value in a shift expression
+        expr_Rm = expression(&prog->iml_pool, expr_Rm, shift_type, expression(OPERAND_IMMEDIATE, shift_len));
+    }
+
+    const instruction iml = {
+        .var = VARIANT_MATH,
+        .math = {
+            .dest_register = Rd,
+            .set_flags = set_flags,
+            .expr = expression(&prog->iml_pool, expr_Rn, op ? MATH_OP_ADD : MATH_OP_SUB, expr_Rm),
+        },
+        .is_64bit = is_64bit,
+        .touched_negative_flag = set_flags,
+        .touched_zero_flag = set_flags,
+        .touched_carry_flag = set_flags,
+        .touched_overflow_flag = set_flags,
+    };
+
+    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
 }
 
 void decode_data_reg(program* prog, u32 instr) {
@@ -253,9 +296,11 @@ void decode_data_reg(program* prog, u32 instr) {
         break;
     case L2_DATA_REG_LOGICAL_SHIFT:
         LOG_MSG(debug, "Bitwise instruction w/ shifted register\n");
+        decode_data_reg_logical_shift(prog, instr);
         break;
     case L2_DATA_REG_ADDSUB_SHIFT:
         LOG_MSG(debug, "Add/subtract w/ shifted register\n");
+        decode_data_reg_addsub_shift(prog, instr);
         break;
     case L2_DATA_REG_ADDSUB_EXTEND:
         LOG_MSG(debug, "Add/subtract w/ sign/zero-extended register\n");
