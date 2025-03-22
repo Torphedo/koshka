@@ -13,6 +13,7 @@
 
 #include <pool.h>
 #include "arm_encoding.h"
+#include "iml.h"
 #include <bitmanip.h>
 #include <arm_asl.h>
 
@@ -102,23 +103,32 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
         imm <<= 12;
     }
 
+    const iml_expression expr_reg = {
+        .value = {
+            .type = IML_OPERAND_REGISTER,
+            .reg = Rn,
+        },
+    };
+
+    const iml_expression expr_imm = {
+        .is_value = true,
+        .value = {
+            .type = IML_OPERAND_IMMEDIATE,
+            .imm = imm,
+        },
+    };
+
     const iml_instr iml = {
         .is_64bit = is_64bit,
         .variant = IML_VARIANT_MATH,
         .math = {
             .dest_register = Rd,
             .set_flags = set_flags,
-            .operation = op ? MATH_OP_ADD : MATH_OP_SUB,
-            .sources = {
-                {
-                    .type = IML_OPERAND_REGISTER,
-                    .exists = true,
-                    .reg = Rn,
-                },
-                {
-                    .type = IML_OPERAND_IMMEDIATE,
-                    .exists = true,
-                    .imm = imm,
+            .expression = {
+                .expr = {
+                    .op = op ? MATH_OP_ADD : MATH_OP_SUB,
+                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), sizeof(expr_reg)),
+                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), sizeof(expr_imm)),
                 },
             },
         },
@@ -156,6 +166,22 @@ void decode_logical_imm(iml_program* prog, u32 instr) {
     const iml_math_op operation = optable[op];
     const bool set_flags = (op == 0b11); // Special case
 
+    const iml_expression expr_reg = {
+        .is_value = true,
+        .value = {
+            .type = IML_OPERAND_REGISTER,
+            .reg = Rn,
+        },
+    };
+
+    const iml_expression expr_imm = {
+        .is_value = true,
+        .value = {
+            .type = IML_OPERAND_IMMEDIATE,
+            .imm = imm_val,
+        },
+    };
+
     const iml_instr iml = {
         .is_64bit = is_64bit,
         .variant = IML_VARIANT_MATH,
@@ -167,20 +193,14 @@ void decode_logical_imm(iml_program* prog, u32 instr) {
         .touched_carry_flag = set_flags,
         .touched_overflow_flag = set_flags,
         .math = {
-            .dest_register = Rn,
+            .dest_register = Rd,
             .set_flags = set_flags,
-            .operation = operation,
-            .sources = {
-                {
-                    .type = IML_OPERAND_REGISTER,
-                    .exists = true,
-                    .reg = Rn,
-                },
-                {
-                    .type = IML_OPERAND_IMMEDIATE,
-                    .exists = true,
-                    .imm = imm_val,
-                },
+            .expression = (iml_expression){
+                .expr = {
+                    .op = op,
+                    .left  = pool_push(&prog->iml_pool, &expr_reg, sizeof(expr_reg), sizeof(expr_reg)),
+                    .right = pool_push(&prog->iml_pool, &expr_imm, sizeof(expr_imm), sizeof(expr_imm)),
+                }
             },
         },
     };

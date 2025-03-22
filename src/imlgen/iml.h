@@ -52,16 +52,29 @@ typedef enum {
     MATH_OP_ENUMMAX,
 }iml_math_op;
 
+static const iml_math_op shift_type_table[] = {
+    MATH_OP_LSL,
+    MATH_OP_LSR,
+    MATH_OP_ASR,
+    MATH_OP_ROR,
+};
+
 typedef enum {
     IML_OPERAND_IMMEDIATE,
     IML_OPERAND_REGISTER,
 }iml_operand_type;
 
+// Many instructions will operate on a register value before using it in
+// another operation, but don't mutate the register itself.
+// For example BIC (bitwise clear) can encode things like this:
+//                    Rd = Rn & (~(Rm >> 7))
+//  ... but only Rd is mutated.
+// To handle this, we build an expression tree.
+
+// A single operand to an expression
 typedef struct {
     // Operand can be either a register or immediate value
     iml_operand_type type: 2;
-    // The poor man's std::optional, set true if there's meaningful data in this entry
-    bool exists: 1;
     union {
         u8 reg; // Register ID
         // The immediate can be as large as a 64-bit bitmask
@@ -71,14 +84,33 @@ typedef struct {
     };
 }iml_operand;
 
+// Essentially a typed pool handle to an iml_expression.
+typedef pool_handle iml_expression_handle;
+
+// Recursive expression tree type.
+typedef struct iml_expression_s {
+    // Union tag for the expression. Indicates if you should interpret it as a
+    // final value (a register or immediate) or another layer of expression.
+    bool is_value;
+    union {
+        struct {
+            iml_math_op op;
+
+            // The left and right sub-expressions
+            iml_expression_handle left;
+            iml_expression_handle right;
+        }expr;
+        iml_operand value;
+    };
+}iml_expression;
+
 // Specialized format for instructions that operate on simple integer data
 // (single destination, non-SIMD)
 typedef struct {
     // Destinations in this type of instruction are always a register
     u8 dest_register;
-    bool set_flags: 1; // Whether to set CPU state flags with operation result
-    iml_math_op operation;
-    iml_operand sources[3]; // Up to 3 operands, could be immediate or register
+    bool set_flags; // Whether to set CPU state flags with operation result
+    iml_expression expression;
 }iml_instr_math;
 
 // Different variants of instruction
