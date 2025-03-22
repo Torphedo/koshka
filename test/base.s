@@ -16,7 +16,8 @@ _start:
     adr x1, _start
     adrp x1, _start
 
-    and x1, x2, #128
+    // Largest possible bitmask value, to test the decoder
+    and x1, x2, #0xFFFFFFFFFFFFFFFF
     and x1, x2, x1, lsl 4
     ands x1, x2, #64
     ands x1, x2, x1, lsl 4

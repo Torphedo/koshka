@@ -23,9 +23,9 @@ u64 ROR(u64 x, u8 bit_size, u8 shift) {
 }
 
 u64 DecodeBitMasks(bool immN, u8 imms, u8 immr, bool immediate) {
-    // Sorry about the terse variable names, this is taken the spec and I don't
-    // fully understand how the encoding is meant to work. I couldn't get the
-    // spec's code to work, so some of the math comes from LLVM:
+    // Sorry about the terse variable names, this is taken from the spec and I
+    // don't fully understand how the encoding is meant to work. I couldn't get
+    // the spec's code to work, so some of the math comes from LLVM:
     // https://llvm.org/doxygen/AArch64AddressingModes_8h_source.html#l00293
     // - Torph
 
@@ -34,15 +34,15 @@ u64 DecodeBitMasks(bool immN, u8 imms, u8 immr, bool immediate) {
     assert(immr <= MAX_VAL_FOR_SIZE(6));
 
     const s8 len = HighestBitSet((((u8)immN) << 6) | (((u8)~imms) & MAX_VAL_FOR_SIZE(6)));
-    assert(len > 0);
-    assert(len <= 7);
+    assert(len > 0 && "Pattern length must be at least 1!");
+    assert(len <= 6 && "Impossibly high pattern length!");
 
     u8 size = 1 << len;
     const u8 S = imms & (size - 1);
     const u8 R = immr & (size - 1);
     assert(S != size - 1);
 
-    u64 pattern = (1 << (S + 1)) - 1;
+    u64 pattern = ((u64)1 << (S + 1)) - 1;
     pattern = ROR(pattern, size, R);
 
     while (size != 64) {
@@ -50,6 +50,6 @@ u64 DecodeBitMasks(bool immN, u8 imms, u8 immr, bool immediate) {
         size *= 2;
     }
 
-    LOG_MSG(debug, "Decoded bitmask value %d\n", pattern);
+    LOG_MSG(debug, "Decoded bitmask value %llu\n", pattern);
     return pattern;
 }
