@@ -3,11 +3,10 @@
 _start:
     sub sp, sp, #0x16 // Stack setup
 
-    str r0, [sp, #0x12]
-    ldr r8, [sp, #0x12]
-    ldr r9, [sp, #0x12]
-    mul r0, r8, r9
+    str x0, [sp, #0x12]
+    ldr x8, [sp, #0x12]
+    ldr x9, [sp, #0x12]
+    mul x0, x8, x9
 
     add sp, sp, #0x16 // Stack teardown
-    bx lr
-
+    ret

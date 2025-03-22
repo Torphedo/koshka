@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     }
 
     vfile arm_code = vfile_open(arm_buf, size);
-    LOG_MSG(debug, "Generating IML for %d ARM instructions", size / 4);
+    LOG_MSG(debug, "Generating IML for %d ARM instructions\n", size / 4);
     const iml_program prog = imlgen(arm_buf, size);
     // TODO: Do shatter here
     // TODO: Do register allocation here
