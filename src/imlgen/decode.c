@@ -13,7 +13,8 @@
 
 #include <pool.h>
 #include "arm_encoding.h"
-#include "bitmanip.h"
+#include <bitmanip.h>
+#include <arm_asl.h>
 
 void decode_branch(iml_program* prog, u32 instr) {
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
@@ -86,7 +87,6 @@ void decode_movw(iml_program* prog, u32 instr) {
     }
 }
 
-// Decoding for L2_DATA_IMM_ADDSUB_IMM
 void decode_addsub_imm(iml_program* prog, u32 instr) {
     // These names match the spec on pg. C4-193, except "sf" and "S" which are renamed
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
@@ -112,18 +112,18 @@ void decode_addsub_imm(iml_program* prog, u32 instr) {
             .sources = {
                 {
                     .type = IML_OPERAND_REGISTER,
-                    .reg = Rn,
                     .exists = true,
+                    .reg = Rn,
                 },
                 {
                     .type = IML_OPERAND_IMMEDIATE,
-                    .imm = imm,
                     .exists = true,
+                    .imm = imm,
                 },
             },
         },
     };
-    
+
     // Add the IML to the pool
     pool_push(&prog->iml_pool, &iml, sizeof(iml), sizeof(iml));
 }
@@ -144,8 +144,7 @@ void decode_logical_imm(iml_program* prog, u32 instr) {
         assert(N == 0);
     }
 
-    // TODO: Figure out how this is decoded
-    const u32 imm_val = 0;
+    const u32 imm_val = DecodeBitMasks(N, imms, immr, true);
 
     // We just use the operation value as a lookup table index
     const iml_math_op optable[] = {
@@ -198,15 +197,17 @@ void decode_data_imm(iml_program* prog, u32 instr) {
     case L2_DATA_IMM_ADDSUB_IMM:
         decode_addsub_imm(prog, instr);
         break;
-    case L2_DATA_IMM_PC_REL_ADDR:
     case L2_DATA_IMM_LOGICAL_IMM:
         decode_logical_imm(prog, instr);
         break;
+    case L2_DATA_IMM_PC_REL_ADDR:
     case L2_DATA_IMM_BITFIELD:
     case L2_DATA_IMM_EXTRACT:
+        LOG_MSG(warning, "Unimplemented\n");
+        break;
     case L2_DATA_IMM_UNALLOCATED:
     default:
-        LOG_MSG(warning, "Unimplemented\n");
+        LOG_MSG(warning, "Unallocated/invalid instruction.\n");
         break;
     }
 }
