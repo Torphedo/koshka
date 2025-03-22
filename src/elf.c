@@ -31,6 +31,7 @@ u8* load_elf(const char* path, s64* size_out) {
     assert(size_out != NULL);
     FILE* f = fopen(path, "rb");
     if (f == NULL) {
+        LOG_MSG(error, "Couldn't open ELF file \"%s\"!\n", path);
         return NULL;
     }
 

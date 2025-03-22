@@ -27,12 +27,17 @@ int main(int argc, char** argv) {
     u8* arm_buf = NULL;
     if (file_is_elf(path)) {
         arm_buf = load_elf(path, &size);
+        if (arm_buf == NULL || size == 0) {
+            LOG_MSG(error, "Couldn't load ELF file \"%s\" (or it was empty)\n");
+            return EXIT_FAILURE;
+        }
     } else {
         // We assume the file just has ARM assembly
         size = file_size(path);
         arm_buf = file_load(path);
-        if (arm_buf == NULL) {
-            LOG_MSG(error, "Failed to load ARM assembly file \"%s\"\n", path);
+        if (arm_buf == NULL || size < 1) {
+            LOG_MSG(error, "Failed to load ARM assembly file \"%s\" (%lld bytes)\n", path, size);
+            free(arm_buf);
             return EXIT_FAILURE;
         }
     }
