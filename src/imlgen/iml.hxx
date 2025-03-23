@@ -1,16 +1,12 @@
 #pragma once
-
-/// Less architecture-dependent representation of ARM code
-/// (aka intermediate language)
-///
-/// Takes heavy inspiration from the Cemu PPC Recompiler:
-/// https://github.com/cemu-project/Cemu/tree/main/src/Cafe/HW/Espresso/Recompiler
-/// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.h
-/// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
-///
-/// We split instructions into a series of simple micro-operations like a real
-/// CPU would. This lets us re-use code to implement specialized instructions.
-/// (e.g. add immediate with negate would be an immediate add, then a negate).
+// A less architecture-dependent representation of ARM code, intended to
+// mirror how a real CPU splits instructions into microcode operations.
+// This lets us re-use code to implement specialized instructions.
+//
+// Takes heavy inspiration from the Cemu PPC Recompiler:
+// https://github.com/cemu-project/Cemu/tree/main/src/Cafe/HW/Espresso/Recompiler
+// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.h
+// https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
 
 #include "bitmanip.h"
 #include <common/int.h>
@@ -21,6 +17,9 @@ namespace iml {
 
 // All potential math operations (non-SIMD)
 enum math_op : u8 {
+    // TODO: Consider adding separate ops for add w/ carry or signed addition
+
+    // Basic 4-function ops
     MATH_OP_ADD,
     MATH_OP_SUB,
     MATH_OP_MUL,
@@ -51,6 +50,7 @@ enum math_op : u8 {
     MATH_OP_ENUMMAX,
 };
 
+// Equivalent to the ASL function DecodeShift()
 static const math_op shift_type_table[] = {
     MATH_OP_LSL,
     MATH_OP_LSR,
@@ -58,6 +58,7 @@ static const math_op shift_type_table[] = {
     MATH_OP_ROR,
 };
 
+// Maps [opc] field to an operation, for shifted bitwise ops in section C4.5.10
 static const math_op bitwise_op_table[] = {
     MATH_OP_AND,
     MATH_OP_OR,
@@ -114,35 +115,22 @@ struct expression {
     expression() = default;
 
     // Initialize expression with a final value
-    expression(operand_type type, u64 val, bool force_register = false) {
-        this->is_value = true;
-        this->value.type = type;
-        switch (type) {
-        case OPERAND_REGISTER:
-            if (val == MAX_VAL_FOR_SIZE(5) && !force_register) {
-                // This special value means the zero register, so replace it
-                // with an immediate 0. The caller can override this (e.g. if
-                // in their context it means the stack pointer instead).
-                this->value.type = OPERAND_IMMEDIATE;
-                this->value.imm = 0;
-            } else {
-                this->value.reg = val;
-            }
-            break;
-        case OPERAND_IMMEDIATE:
-            this->value.imm = val;
-            break;
-        }
-    }
+    /// @brief Create a constant value expression
+    /// @param type The type of value (register or immediate)
+    /// @param val The constant value to store
+    /// @param force_register References to the special zero register will get
+    /// replaced with the immediate value 0, unless this argument is true.
+    expression(operand_type type, u64 val, bool force_register = false);
 
-    expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right, bool carry = false) {
-        this->expr = {
-            .op = op,
-            .carry = carry,
-            .left  = pool_push(iml_pool, &left, sizeof(left), 0),
-            .right = pool_push(iml_pool, &right, sizeof(right), 0),
-        };
-    }
+    /// @brief Add a left and right expression to a pool, and construct an expression between them
+    ///
+    /// @param iml_pool The IML pool to store your expressions in
+    /// @param left The left side of the new expression
+    /// @param op   The operation to perform (e.g. add/subtract). For unary
+    /// operations (like bitwise negate), leave the right expression blank.
+    /// @param right The right side of the new expression
+    /// @param carry TODO: Document this more precisely
+    expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right, bool carry = false);
 };
 
 // Specialized format for instructions that operate on simple integer data

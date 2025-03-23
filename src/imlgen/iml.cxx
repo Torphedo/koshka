@@ -47,4 +47,34 @@ program imlgen(u8* arm_code, u32 size) {
     return out;
 }
 
+expression::expression(operand_type type, u64 val, bool force_register) {
+    this->is_value = true;
+    this->value.type = type;
+    switch (type) {
+    case OPERAND_REGISTER:
+        if (val == MAX_VAL_FOR_SIZE(5) && !force_register) {
+            // This special value means the zero register, so replace it with
+            // an immediate 0. The caller can override this (e.g. if in their
+            // context it means the stack pointer instead).
+            this->value.type = OPERAND_IMMEDIATE;
+            this->value.imm = 0;
+        } else {
+            this->value.reg = val;
+        }
+        break;
+    case OPERAND_IMMEDIATE:
+        this->value.imm = val;
+        break;
+    }
+}
+
+expression::expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right, bool carry) {
+    this->expr = {
+        .op = op,
+        .carry = carry,
+        .left  = pool_push(iml_pool, &left, sizeof(left), 0),
+        .right = pool_push(iml_pool, &right, sizeof(right), 0),
+    };
+}
+
 } // namespace iml
