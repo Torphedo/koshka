@@ -178,12 +178,6 @@ typedef struct {
     pool_handle next;
 }instruction;
 
-// Poor man's std::optional<u32>. Used for a branch destination address.
-typedef struct {
-    u32 dest;
-    bool exists;
-}bdest;
-
 // Tree of IML instructions
 typedef struct {
     // We use a pool for the entire tree so it's easily destroyed, and branches

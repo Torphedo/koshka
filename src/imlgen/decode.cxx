@@ -19,7 +19,7 @@
 
 namespace iml {
 
-void decode_branch(program* prog, u32 instr) {
+decode_result decode_branch(program* prog, u32 instr) {
     LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
     // See C4.3, pg. C4-197 for the table defining all these values & cases.
     const u8 op0 = GET_BIT_REGION(instr, 29, 31);
@@ -67,9 +67,12 @@ void decode_branch(program* prog, u32 instr) {
     default:
         break;
     }
+
+    decode_result out = {};
+    return out;
 }
 
-void decode_movw(program* prog, u32 instr) {
+decode_result decode_movw(program* prog, u32 instr) {
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 opc = GET_BIT_REGION(instr, 29, 30);
     const u8 register_num = GET_BIT_REGION(instr, 0, 4);
@@ -89,9 +92,12 @@ void decode_movw(program* prog, u32 instr) {
             break;
         }
     }
+
+    decode_result out = {};
+    return out;
 }
 
-void decode_addsub_imm(program* prog, u32 instr) {
+decode_result decode_addsub_imm(program* prog, u32 instr) {
     // These names match the spec on pg. C4-193, except "sf" and "S" which are renamed
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 op = GET_SINGLE_BIT(instr, 30);
@@ -122,10 +128,11 @@ void decode_addsub_imm(program* prog, u32 instr) {
     };
 
     // Add the IML to the pool
-    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
+    decode_result out = {.instr = iml};
+    return out;
 }
 
-void decode_logical_imm(program* prog, u32 instr) {
+decode_result decode_logical_imm(program* prog, u32 instr) {
     // Parse instruction fields
     const bool is_64bit = GET_SINGLE_BIT(instr, 31);
     const u8 op = GET_BIT_REGION(instr, 29, 30);
@@ -167,20 +174,20 @@ void decode_logical_imm(program* prog, u32 instr) {
         .touched_overflow_flag = set_flags,
     };
 
-    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
+    return (decode_result){.instr = iml};
 }
 
-void decode_data_imm(program* prog, u32 instr) {
+decode_result decode_data_imm(program* prog, u32 instr) {
     LOG_MSG(debug, "Immediate instruction 0x%08X\n", instr);
     switch (data_imm_get_group(instr)) {
     case L2_DATA_IMM_MOV_WIDE:
-        decode_movw(prog, instr);
+        return decode_movw(prog, instr);
         break;
     case L2_DATA_IMM_ADDSUB_IMM:
-        decode_addsub_imm(prog, instr);
+        return decode_addsub_imm(prog, instr);
         break;
     case L2_DATA_IMM_LOGICAL_IMM:
-        decode_logical_imm(prog, instr);
+        return decode_logical_imm(prog, instr);
         break;
     case L2_DATA_IMM_PC_REL_ADDR:
     case L2_DATA_IMM_BITFIELD:
@@ -192,9 +199,11 @@ void decode_data_imm(program* prog, u32 instr) {
         LOG_MSG(warning, "Unallocated/invalid instruction.\n");
         break;
     }
+
+    return (decode_result){};
 }
 
-void decode_data_reg_logical_shift(program* prog, u32 instr) {
+decode_result decode_data_reg_logical_shift(program* prog, u32 instr) {
     // Parse instruction fields
     const u8 Rd        = GET_BIT_REGION(instr,  0,  4); // Destination
     const u8 Rn        = GET_BIT_REGION(instr,  5,  9); // A source register
@@ -238,10 +247,10 @@ void decode_data_reg_logical_shift(program* prog, u32 instr) {
         .touched_overflow_flag = set_flags,
     };
 
-    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
+    return (decode_result){.instr = iml};
 }
 
-void decode_data_reg_addsub_shift(program* prog, u32 instr) {
+decode_result decode_data_reg_addsub_shift(program* prog, u32 instr) {
     // TODO: This shares a lot of decoding with bitwise ops, can we merge them?
     const u8 Rd        = GET_BIT_REGION(instr,  0,  4); // Destination
     const u8 Rn        = GET_BIT_REGION(instr,  5,  9); // A source register
@@ -279,10 +288,10 @@ void decode_data_reg_addsub_shift(program* prog, u32 instr) {
         .touched_overflow_flag = set_flags,
     };
 
-    pool_push(&prog->iml_pool, &iml, sizeof(iml), 0);
+    return (decode_result){.instr = iml};
 }
 
-void decode_data_reg(program* prog, u32 instr) {
+decode_result decode_data_reg(program* prog, u32 instr) {
     LOG_MSG(debug, "Register data instruction 0x%08X\n", instr);
     switch (data_reg_get_group(instr)) {
     case L2_DATA_REG_3_SOURCES:
@@ -296,11 +305,11 @@ void decode_data_reg(program* prog, u32 instr) {
         break;
     case L2_DATA_REG_LOGICAL_SHIFT:
         LOG_MSG(debug, "Bitwise instruction w/ shifted register\n");
-        decode_data_reg_logical_shift(prog, instr);
+        return decode_data_reg_logical_shift(prog, instr);
         break;
     case L2_DATA_REG_ADDSUB_SHIFT:
         LOG_MSG(debug, "Add/subtract w/ shifted register\n");
-        decode_data_reg_addsub_shift(prog, instr);
+        return decode_data_reg_addsub_shift(prog, instr);
         break;
     case L2_DATA_REG_ADDSUB_EXTEND:
         LOG_MSG(debug, "Add/subtract w/ sign/zero-extended register\n");
@@ -321,29 +330,27 @@ void decode_data_reg(program* prog, u32 instr) {
         LOG_MSG(debug, "Invalid instruction group.\n");
         break;
     }
+
+    return (decode_result){};
 }
 
-void decode_load_store(program* prog, u32 instr) {
+decode_result decode_load_store(program* prog, u32 instr) {
     LOG_MSG(warning, "Unimplemented instruction 0x%08X\n", instr);
+    return (decode_result){};
 }
 
-bdest decode(program* prog, u32 instr) {
+decode_result decode(program* prog, u32 instr) {
     assert(prog != NULL);
     assert(instr != 0);
     switch (instr_get_group(instr)) {
     case L1_BRANCH:
-        // TODO: Return branch destinations
-        decode_branch(prog, instr);
-        break;
+        return decode_branch(prog, instr);
     case L1_DATA_IMM:
-        decode_data_imm(prog, instr);
-        break;
+        return decode_data_imm(prog, instr);
     case L1_DATA_REG:
-        decode_data_reg(prog, instr);
-        break;
+        return decode_data_reg(prog, instr);
     case L1_LD_STR:
-        decode_load_store(prog, instr);
-        break;
+        return decode_load_store(prog, instr);
     case L1_DATA_SIMD:
         LOG_MSG(warning, "Unimplemented SIMD instruction 0x%08X\n", instr);
         break;
@@ -354,7 +361,7 @@ bdest decode(program* prog, u32 instr) {
     };
 
     // No branch destination
-    return (bdest){0};
+    return (decode_result){};
 }
 
 } // namespace iml

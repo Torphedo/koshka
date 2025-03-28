@@ -9,30 +9,36 @@
 
 namespace iml {
 
-void imlgen_recurse(program* prog, pool_handle pos) {
+pool_handle imlgen_recurse(program* prog, pool_handle pos) {
     assert(prog != NULL);
     const u32* arm_instr = (u32*)pool_getdata(prog->arm_pool, pos);
     // Decoding function returns branch destinations if they exist
-    const bdest branch = decode(prog, *arm_instr);
+    decode_result result = decode(prog, *arm_instr);
+
+    // Push this instruction to the pool
+    const pool_handle Hdecoded = pool_push(&prog->iml_pool, &result.instr, sizeof(result.instr), 0);
 
     // Decode the rest of the current function before we resolve branches, to
     // keep more of the IML in one place.
     if (pos + 4 < prog->arm_pool.alloc_size) {
-        imlgen_recurse(prog, pos + 4);
+        result.instr.next = imlgen_recurse(prog, pos + 4);
         // Mark this location as decoded
         prog->decoded_instrs.set_bit(pos / 4, 1);
     } // else we're at the end of the ARM buffer
 
+    // Update next pointer with the result of the recursive call
+    ((instruction*)pool_getdata(prog->iml_pool, Hdecoded))->next = result.instr.next;
+
     // Last instruction was a branch, decode its destination (if we haven't already)
 
     const bool dest_already_decoded = prog->decoded_instrs.get_bit(pos / 4);
-    if (branch.exists && !dest_already_decoded) {
-        const u32 dest = branch.dest;
-        imlgen_recurse(prog, dest);
 
-        // Add to list of decoded destinations
-        prog->decoded_instrs.set_bit(dest / 4, 1);
+    if (result.branch_dest.is_value && result.branch_dest.value.type == OPERAND_IMMEDIATE) {
+        // Constant PC-relative branch
     }
+
+    // Tell caller where we put the IML for this instruction
+    return Hdecoded;
 }
 
 program imlgen(u8* arm_code, u32 size) {
