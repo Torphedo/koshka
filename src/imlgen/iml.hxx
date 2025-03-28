@@ -8,7 +8,6 @@
 // https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.h
 // https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
 
-#include "bitmanip.h"
 #include <common/int.h>
 #include <common/list.h>
 #include <pool.h>

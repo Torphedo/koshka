@@ -13,6 +13,7 @@ add_executable(koshka
     src/main.cxx
     src/elf.c
     src/pool.c
+    src/boolset.cxx
     src/regalloc.c
     src/arm_asl.c
     src/imlgen/iml.cxx

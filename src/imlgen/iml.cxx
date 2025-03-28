@@ -2,6 +2,7 @@
 #include "decode.hxx"
 #include <common/list.h>
 #include <pool.h>
+#include <bitmanip.h>
 
 #include <assert.h>
 #include <stdbool.h>
