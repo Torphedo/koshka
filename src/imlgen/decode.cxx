@@ -106,7 +106,7 @@ void decode_addsub_imm(program* prog, u32 instr) {
     // Immediate can be optionally left-shifted by 12 bits
     if (shift == 0b01) {
         // Insert a left-shift expression in place of the constant immediate
-        const expression expr_shift = expression( OPERAND_IMMEDIATE, 12);
+        const expression expr_shift = expression(OPERAND_IMMEDIATE, 12);
         expr_imm = expression(&prog->iml_pool, expr_imm, MATH_OP_LSL, expr_shift);
     }
 

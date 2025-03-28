@@ -8,9 +8,11 @@
 // https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompiler.h
 // https://github.com/cemu-project/Cemu/blob/main/src/Cafe/HW/Espresso/Recompiler/PPCRecompilerIml.h
 
+#include "bitmanip.h"
 #include <common/int.h>
 #include <common/list.h>
 #include <pool.h>
+#include <boolset.hxx>
 
 namespace iml {
 
@@ -70,25 +72,24 @@ enum operand_type : u8 {
     OPERAND_REGISTER,
 };
 
-// Many instructions will operate on a register value before using it in
-// another operation, but don't mutate the register itself.
-// For example BIC (bitwise clear) can encode things like this:
-//                    Rd = Rn & (~(Rm >> 7))
-//  ... but only Rd is mutated.
-// To handle this, we build an expression tree.
-
 // A single operand to an expression
 struct operand {
     // Operand can be either a register or immediate value
     operand_type type: 2;
     union {
         u8 reg; // Register ID
-        // The immediate can be as large as a 64-bit bitmask
-        // TODO: See if we can separate the 32-bit and 64-bit variant to save
-        // space on the IML tree
+
+        // TODO: Find out the largest immediate size and shrink this
         u64 imm;
     };
 };
+
+// Many instructions will operate on a register value before using it in
+// another operation, but don't mutate the register itself.
+// For example BIC (bitwise clear) can encode things like this:
+//                    Rd = Rn & (~(Rm >> 7))
+//  ... but only Rd is mutated.
+// To handle this, we use a recursive expression tree.
 
 // Essentially a typed pool handle to an iml_expression.
 typedef pool_handle expression_handle;
@@ -108,6 +109,8 @@ struct expression {
             expression_handle left;
             expression_handle right;
         }expr;
+
+        // This is a container type that distinguishes registers vs. immediates
         operand value;
     };
 
@@ -147,6 +150,14 @@ typedef enum {
     VARIANT_LOAD_STORE,
 }variant;
 
+enum iml_register : u8 {
+    // The rest are regular integers representing r1-r31
+
+    // Special value used in ARM, a register that always reads as 0
+    REGISTER_ZERO = MAX_VAL_FOR_SIZE(5),
+    REGISTER_PC = REGISTER_ZERO + 1,
+};
+
 typedef struct {
     variant var;
     union {
@@ -180,8 +191,9 @@ typedef struct {
     pool_t iml_pool;
     pool_t arm_pool; // Pool of ARM instructions
     pool_handle entry_point; // The first instruction
+
     // All known branch destinations that have already been decoded
-    list branch_dests;
+    boolset decoded_instrs;
 }program;
 
 program imlgen(u8* arm_code, u32 size);
