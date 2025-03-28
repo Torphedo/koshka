@@ -133,6 +133,8 @@ struct expression {
     expression(pool_t* iml_pool, const expression& left, math_op op, const expression& right, bool carry = false);
 };
 
+// TODO: These structs are kinda getting prefixed, maybe throw them in another namespace?
+
 // Specialized format for instructions that operate on simple integer data
 // (single destination, non-SIMD)
 typedef struct {
@@ -142,10 +144,32 @@ typedef struct {
     expression expr;
 }instr_math;
 
+// Branch type hints from page J1-5433
+enum branch_hint : u8 {
+    BRANCH_CALL, // Subroutine call
+    BRANCH_EXCEPTION_RETURN,
+    BRANCH_DEBUG_EXIT,
+    BRANCH_RETURN, // Subroutine return
+    BRANCH_JUMP,
+    BRANCH_EXCEPTION,
+    BRANCH_UNKNOWN,
+};
+
+typedef struct {
+    // Whether the branch is conditional or unconditional
+    bool conditional;
+    // Whether this branch stores PC + 4 in the link register
+    bool link;
+    // Register value or PC-relative immediate offset
+    operand dest;
+    branch_hint hint;
+}instr_branch;
+
 // Different variants of instruction
 typedef enum {
     VARIANT_MATH,
     VARIANT_LOAD_STORE,
+    VARIANT_BRANCH,
 }variant;
 
 enum iml_register : u8 {
@@ -160,6 +184,7 @@ typedef struct {
     variant var;
     union {
         instr_math math;
+        instr_branch branch;
     };
 
     // Instructions can reference just the 32-bit portion of a 64-bit

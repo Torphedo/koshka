@@ -33,8 +33,10 @@ pool_handle imlgen_recurse(program* prog, pool_handle pos) {
 
     const bool dest_already_decoded = prog->decoded_instrs.get_bit(pos / 4);
 
-    if (result.branch_dest.is_value && result.branch_dest.value.type == OPERAND_IMMEDIATE) {
-        // Constant PC-relative branch
+    if (result.instr.var == VARIANT_BRANCH) {
+        if (result.instr.branch.dest.type == OPERAND_IMMEDIATE) {
+            // Constant PC-relative branch, we should replace with the IML offset
+        }
     }
 
     // Tell caller where we put the IML for this instruction

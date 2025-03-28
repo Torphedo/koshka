@@ -62,11 +62,13 @@ L2_data_imm_page data_imm_get_group(u32 instr) {
     return L2_DATA_IMM_UNALLOCATED;
 }
 
-// See C4.3 on pg. C4-197
+// See section C4.3 on pg. C4-197 for a table defining all these values & cases
 L2_branch_page branch_get_group(u32 instr) {
     const u8 op0 = GET_BIT_REGION(instr, 29, 31);
     const u8 op1 = GET_BIT_REGION(instr, 22, 25);
 
+    // TODO: We can probably turn this into a bitmask loop like above by using
+    // 2 mask arrays
     if (op0 == 0b010) {
         if ((op1 & 0b1000) == 0) {
             return L2_BRANCH_CONDITIONAL;

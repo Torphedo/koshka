@@ -19,57 +19,70 @@
 
 namespace iml {
 
-decode_result decode_branch(program* prog, u32 instr) {
-    LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
-    // See C4.3, pg. C4-197 for the table defining all these values & cases.
-    const u8 op0 = GET_BIT_REGION(instr, 29, 31);
-    const u8 op1 = GET_BIT_REGION(instr, 22, 25);
+decode_result decode_branch_unconditional(program* prog, u32 instr, L2_branch_page branch_type) {
+    const bool to_register = (branch_type == L2_BRANCH_UNCONDITIONAL_REG);
+    instruction iml = {
+        .var = VARIANT_BRANCH,
+        .branch = {
+            .dest = {
+                .type = to_register ? OPERAND_REGISTER : OPERAND_IMMEDIATE,
+            },
+        },
+    };
 
-    switch (op0) {
-    case 0b010:
-        if ((op1 & 0b1000) == 0) {
-            LOG_MSG(debug, "Conditional branch (imm)\n");
-        }
-        break;
-    case 0b110:
-        if ((op1 & 0b1100) == 0) {
-            LOG_MSG(debug, "Application exception\n");
-        } else if (op1 == 0b0100) {
-            LOG_MSG(debug, "System branch\n");
-        } else if (op1 & 0b1000) {
-            LOG_MSG(debug, "Unconditional branch (reg)\n");
-        }
-        break;
-    default:
-        break;
-    }
-    switch (op0 & 0b011) {
-    case 0b000: {
-        LOG_MSG(debug, "Unconditional branch (imm)\n");
-        bool call = op0 & 0b100; // Top bit indicates if it's a subroutine call
-        // Least significant 26 bits * 4. See C6.6.20, pg. C6-463
-        // 32-bit max is 64x the 26-bit max, so multiplying by 4 is fine.
-        const s32 dest = (instr & ~(0b111111 << 26)) * 4;
-        LOG_MSG(info, "b");
-        if (call) {
-            printf("l");
-        }
-        printf(" #%d\n", dest);
-        break;
-    }
-
-    case 0b001:
-        if ((op1 & 0b1000) == 0) {
-            LOG_MSG(debug, "Compare & branch (imm)\n");
+    if (to_register) {
+        const u8 opc = GET_BIT_REGION(instr, 21, 24);
+        if (opc == 0b0100) {
+            // Exception return
+        } else if (opc == 0b0101) {
+            // Debug restore process state
         } else {
-            LOG_MSG(debug, "Test & branch (imm)\n");
+            // BR/BLR/RET
+            iml.branch.dest.reg = GET_BIT_REGION(instr, 5, 9);
+            switch (opc) {
+            case 0b0000: // BR
+                iml.branch.hint = BRANCH_JUMP;
+                break;
+            case 0b0001: // BLR
+                iml.branch.hint = BRANCH_CALL;
+                iml.branch.link = true;
+                break;
+            case 0b0010: // RET
+                iml.branch.hint = BRANCH_RETURN;
+                break;
+            }
         }
-    default:
-        break;
+    } else {
+        iml.branch.link = GET_SINGLE_BIT(instr, 31);
+        iml.branch.hint = iml.branch.link ? BRANCH_CALL : BRANCH_JUMP;
+        iml.branch.dest.imm = GET_BIT_REGION(instr, 0, 25);
     }
 
-    decode_result out = {};
-    return out;
+    return (decode_result){.instr = iml};
+}
+
+// Decode syscalls/hints, exceptions, and branches
+decode_result decode_system_exception_branch(program* prog, u32 instr) {
+    LOG_MSG(debug, "Branch instruction 0x%08X\n", instr);
+
+    const L2_branch_page branch_type = branch_get_group(instr);
+
+    switch (branch_type) {
+    case L2_BRANCH_UNCONDITIONAL_REG:
+    case L2_BRANCH_UNCONDITIONAL_IMM:
+        return decode_branch_unconditional(prog, instr, branch_type);
+
+    case L2_BRANCH_CONDITIONAL:
+    case L2_BRANCH_COMPARE:
+    case L2_BRANCH_TEST:
+
+    case L2_BRANCH_EXCEPTION:
+    case L2_BRANCH_SYSTEM:
+
+    case L2_BRANCH_UNALLOCATED:
+    default:
+        return (decode_result){};
+    };
 }
 
 decode_result decode_movw(program* prog, u32 instr) {
@@ -344,7 +357,7 @@ decode_result decode(program* prog, u32 instr) {
     assert(instr != 0);
     switch (instr_get_group(instr)) {
     case L1_BRANCH:
-        return decode_branch(prog, instr);
+        return decode_system_exception_branch(prog, instr);
     case L1_DATA_IMM:
         return decode_data_imm(prog, instr);
     case L1_DATA_REG:

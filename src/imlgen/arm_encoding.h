@@ -64,7 +64,7 @@ typedef enum {
     L2_BRANCH_UNCONDITIONAL_IMM,
     L2_BRANCH_COMPARE, // Compares an entire register
     L2_BRANCH_TEST, // Compares a single bit in a register
-    L2_BRANCH_UNALLOCATED, // Compares a single bit in a register
+    L2_BRANCH_UNALLOCATED,
 }L2_branch_page;
 L2_branch_page branch_get_group(u32 instr);
 
