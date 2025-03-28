@@ -1,7 +1,5 @@
 #pragma once
-// A less architecture-dependent representation of ARM code, intended to
-// mirror how a real CPU splits instructions into microcode operations.
-// This lets us re-use code to implement specialized instructions.
+// A less architecture-dependent representation of ARM code
 //
 // Takes heavy inspiration from the Cemu PPC Recompiler:
 // https://github.com/cemu-project/Cemu/tree/main/src/Cafe/HW/Espresso/Recompiler
